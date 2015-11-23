@@ -44,10 +44,32 @@ void InitSystem()
 
 //    InitSPI2Slave();    
     
-    InitSPI1(16);
+    InitSPI1(32);
     
 //    InitSPI1Slave();
  
+}
+
+
+void SystemReset()
+{
+    /* The following code illustrates a software Reset */
+    // assume interrupts are disabled
+    // assume the DMA controller is suspended
+    // assume the device is locked
+    /* perform a system unlock sequence */
+    // starting critical sequence
+    SYSKEY = 0x00000000; //write invalid key to force lock
+    SYSKEY = 0xAA996655; //write key1 to SYSKEY
+    SYSKEY = 0x556699AA; //write key2 to SYSKEY
+    // OSCCON is now unlocked
+    /* set SWRST bit to arm reset */
+    RSWRSTSET = 1;
+    /* read RSWRST register to trigger reset */
+    unsigned int dummy;
+    dummy = RSWRST;
+    /* prevent any unwanted code execution until reset occurs*/
+    WaitMS(1000);
 }
 
 void InitSystem_Test()
@@ -64,11 +86,11 @@ void InitSystem_Test()
     __XC_UART = 1;
   
     // disable for testing purposes
-//    InitUART2();
+    InitUART2();
 //
     InitSPI2Slave();    
     
-//    InitSPI1(32);
+    InitSPI1(32);
     
 //    InitSPI1Slave();
  
@@ -582,9 +604,9 @@ void InitSPI1(int baud_rate)
 {
     MapSPI1MasterPins();
     
-    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN |  SPI_CONFIG_MSSEN | 
-                                                   SPI_CONFIG_MODE8 | SPI_CONFIG_ON |
-                                                   0));
+    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN |   
+                                                   SPI_CONFIG_MODE8 | SPI_CONFIG_ON
+                                                   ));
     SpiChnSetBrg(SPI_CHANNEL1, baud_rate);
     SpiChnEnable(SPI_CHANNEL1, 1);
 }
@@ -797,7 +819,7 @@ BOOL ReadCommandFromUART2(int *command, int length)
     int count  = 0;
     if(command[0] > 0 && (command[1] == 0 || command[1] == 1) && idx >= 3)
     {
-        printf("******************************* Sending Acknowledgment ***************************\n");
+//        printf("******************************* Sending Acknowledgment ***************************\n");
         
         while(UARTTransmitterIsReady(1) == FALSE);
 //        UARTSendDataByte(1 , 0xAA);

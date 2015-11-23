@@ -180,6 +180,7 @@ int main(int argc, char** argv)
     
     float temp ; 
 
+//    SystemReset();
     
     InitSystem_Test();
 //    InitSystem_Test();
@@ -208,11 +209,15 @@ int main(int argc, char** argv)
 //    CNPDGbits.CNPDG9 = 0;
 //    mPORTDClearBits(BIT_0);
 //        SPI1_TempMeasurement_LM_Thermo_Test();
-    CS_INIT();
-    DPDT_INIT();
+//    CS_INIT();
+//    DPDT_INIT();
+//    
     
+    TemperatureSystemInit();
     
 //    SPI1_TempMeasurement_LM_Thermo_Test();
+//    SPI1_TempMeasurement_Test();
+    
     
 //    return 0;
 //    SPI1_TempMeasurement_LM_Thermo_Test();
@@ -226,14 +231,12 @@ int main(int argc, char** argv)
 
     InitTimer1(10);
     
-    printf("Timer set to 10 Hz\n");
+//    printf("Timer set to 10 Hz\n");
 
-//    //    SPI1_TempMeasurement_Test();
+//    SPI1_TempMeasurement_Test();
 //    SPI1_TempMeasurement_LM_Thermo_Test();
 //    
 //    return 0;   
-
-    
 //    InitSPI2(16);
     
 //    WaitReadUART2();
@@ -270,7 +273,7 @@ int main(int argc, char** argv)
 //    }
 //    
     
-    Test_SPI2Slave_DataTransfer();
+//    Test_SPI2Slave_DataTransfer();
 //    return 0;
 //    ReadSPI2Slave_test();
 //    return 0;
@@ -280,7 +283,7 @@ int main(int argc, char** argv)
 //    return 0;
     
     
-//    AdjustTemperature(35.0);
+    AdjustTemperature(35.0);
     return 0;
 
     time_t  tm;

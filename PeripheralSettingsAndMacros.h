@@ -87,6 +87,9 @@ typedef union __Int16Value_tag{
     
 void InitSystem();
 void InitSystem_Test();
+
+void SystemReset();
+
 void InitPWM(int sample_rate, int duty_cycle);
 void InitPWM_v3(int pwm_frequency, int duty_cycle);
 

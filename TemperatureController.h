@@ -44,8 +44,8 @@
 #define  CS_INIT()              {\
                                  mPORTESetPinsDigitalOut((unsigned int)0b11111110);\
                                  mPORTGSetPinsDigitalOut(BIT_12 | BIT_14 | BIT_15);\
-                                 mPORTEClearBits((unsigned int)0b11111110);\
-                                 mPORTEClearBits(BIT_12 | BIT_14 | BIT_15);\
+                                 mPORTESetBits((unsigned int)0b11111110);\
+                                 mPORTESetBits(BIT_12 | BIT_14 | BIT_15);\
                                 }
 
 #define  DPDT_INIT()            {\
@@ -73,6 +73,8 @@ float LSD_Temperature();
 
 void SPI1_TempMeasurement_Test();
 void SPI1_TempMeasurement_LM_Thermo_Test();
+
+void TemperatureSystemInit();
 
 
 

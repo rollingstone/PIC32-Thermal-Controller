@@ -19,6 +19,13 @@ uint16_t    timer_count = 0;
 #define     THERMO_SPI_CHANNEL  SPI_CHANNEL1
 
 
+void TemperatureSystemInit()
+{
+    CS_INIT();
+    DPDT_INIT();
+    
+}
+
 void MapAllPins()
 {
     
@@ -43,7 +50,9 @@ float PmodTC1_Temperature()
     int32_t  value = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
     int32_t  vi = (int32_t)value / (int32_t)(1 << 18);
        
-    float temp = (float) vi * 0.25;
+    float temp = ((float) vi) * 0.25;
+    
+//    printf("Temp %d \n", (int) (temp*100.0));
 
 //    sprintf(sbuf, "**************************** vi   %d   value %d  temp  %d\n", vi, value, (int)temp);
 //    printf( "**************************** vi   %d   value %d  temp  %d\n", vi, value, (int)temp);
@@ -323,7 +332,7 @@ void AdjustTemperature(float target_temp)
     while(1)
     {
         
-        if( 0 && ReadCommandFromUART2(command, command_length) )
+        if(ReadCommandFromUART2(command, command_length) )
         {
             int k;
 
@@ -652,30 +661,36 @@ void SPI1_TempMeasurement_Test()
 {
     float temp = 0;
         // SS1 ==> RB2
+    
+//    CS_INIT();
+
     mPORTBSetPinsDigitalOut(BIT_2);
     mPORTBSetBits(BIT_2); 
     int kcount = 0;
-    CS_INIT();
     
+    printf("Started reading temperature....\n");
     while(1)
     {
-//       mPORTBClearBits(BIT_2); 
-       ADISCO_CS(CS_LOW);
+//       ADISCO_CS(CS_LOW);
        
 //       PELTIER_TOP_CS(CS_LOW);
-//       PELTIER_BOTTOM_CS(CS_LOW);
-       temp = PmodTC1_Temperature();
-       
-       int frac_temp =(int) ( ((float) temp - ((float) (int) temp) ) * 1000.0 );
+       PELTIER_BOTTOM_CS(CS_LOW);
+//       FACE_PLATE_CS(CS_LOW);
 
-//       PELTIER_BOTTOM_CS(CS_HIGH);
+       mPORTBClearBits(BIT_2); 
+       temp = PmodTC1_Temperature();
+       mPORTBSetBits(BIT_2); 
        
-       PELTIER_TOP_CS(CS_HIGH);
+
+       PELTIER_BOTTOM_CS(CS_HIGH);
+//       FACE_PLATE_CS(CS_HIGH);
+       
+//       PELTIER_TOP_CS(CS_HIGH);
 //       ADISCO_CS(CS_HIGH);
-//       mPORTBSetBits(BIT_2); 
        
+       int frac_temp =(int) ( ((float) temp - ((float) (int) temp) ) * 100.0 );
        
-       printf("%d:\tTemperature == %d + (%d/1000)\n", kcount++, (int) temp, frac_temp);
+       printf("%d:\tTemperature == %d + (%d/100)\n", kcount++, (int) (temp), frac_temp);
        WaitMS(100);
     }
 }
