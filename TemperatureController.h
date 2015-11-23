@@ -61,10 +61,21 @@
 extern "C" {
 #endif
 
+    
 void AdjustTemperature(float target_temp);
 float LSD_Temperature();
 
 void TestUART2DataSendToRaspberryPi();
+
+float PmodTC1_Temperature();   
+float LSD_Temperature();
+
+
+void SPI1_TempMeasurement_Test();
+void SPI1_TempMeasurement_LM_Thermo_Test();
+
+
+
 
 #ifdef __cplusplus
 }

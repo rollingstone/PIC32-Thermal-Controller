@@ -25,7 +25,54 @@ int DutyCyclePWM1 = 50;
 BOOL    DoReadUART2 = FALSE;
 
 
+void InitSystem()
+{
+    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
+    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
+                                                              // This will double the PWM frequency.
+    
 
+//    SYSTEMConfigPB()
+    INTEnableSystemMultiVectoredInt();
+    
+    InitUART1();
+    __XC_UART = 1;
+  
+    // disable for testing purposes
+//    InitUART2();
+
+//    InitSPI2Slave();    
+    
+    InitSPI1(16);
+    
+//    InitSPI1Slave();
+ 
+}
+
+void InitSystem_Test()
+{
+    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
+    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
+                                                              // This will double the PWM frequency.
+    
+//    SYSTEMConfigPB()
+    INTEnableSystemMultiVectoredInt();
+    
+    InitUART1();
+    __XC_UART = 1;
+  
+    // disable for testing purposes
+//    InitUART2();
+//
+    InitSPI2Slave();    
+    
+//    InitSPI1(32);
+    
+//    InitSPI1Slave();
+ 
+}
 
 
 void WaitMS(unsigned int ms)
@@ -38,31 +85,10 @@ void WaitMS(unsigned int ms)
         i = 0;
         while(i++ < 10000)
         {
-            asm("nop");
+            NOP();
         }
     }
 }
-
-
-void InitSystem()
-{
-    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
-                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
-                                                              // This will double the PWM frequency.
-    
-
-//    SYSTEMConfigPB()
-    INTEnableSystemMultiVectoredInt();
-    
-    InitUART1();
-    __XC_UART = 1;
-    
-    InitUART2();
-    
-    InitSPI2(16);    
-}
-
 
 
 int InitUART1()
@@ -87,7 +113,7 @@ int InitUART1()
     uint32_t brate;
     
 //    brate = 115200L;
-    brate = 2L*500000L;
+    brate = 500000L;
 //    brate = 460800;//921600L/2L;
 
     UARTConfigure((UART_MODULE)uart_id, UART_ENABLE_PINS_TX_RX_ONLY);
@@ -106,17 +132,23 @@ int InitUART2()
 //    mPORTCSetPinsDigitalIn(BIT_1 | BIT_3);
 //    mPORTCSetPinsDigitalOut(BIT_2 | BIT_4);
 
-    mPORTCSetPinsDigitalIn(BIT_1 );
-    mPORTCSetPinsDigitalOut(BIT_4);
+//    mPORTCSetPinsDigitalIn(BIT_1 );
+//    mPORTCSetPinsDigitalOut(BIT_4);
     
+    mPORTDSetPinsDigitalOut(BIT_11);    // U2TX  J10.15
+    mPORTDSetPinsDigitalIn(BIT_10 );    // U2RX J10.16
     
     PPS_Unlock();
 
-    U2RXRbits.U2RXR = 0b1010; // 0b0010; // RC1 input J10.18
-    U2CTSRbits.U2CTSR = 0b1100; // RC3 .. Input  J10.20
-    
-    RPC2Rbits.RPC2R = 0b0001; // U2RTS 0b0011; RTS output J10.19
-    RPC4Rbits.RPC4R = 0b0001; // U2TX  UTX  J10.21
+//    U2RXRbits.U2RXR = 0b1010; // 0b0010; // RC1 input J10.18
+//    RPC4Rbits.RPC4R = 0b0001; // U2TX  UTX  J10.21
+
+    U2RXRbits.U2RXR = 0b0011; // 0b0010; // RD10 input J10.16
+    RPD11Rbits.RPD11R = 0b0001; // U2TX  UTX  J10.15
+
+   
+    //    U2CTSRbits.U2CTSR = 0b1100; // RC3 .. Input  J10.20
+//    RPC2Rbits.RPC2R = 0b0001; // U2RTS 0b0011; RTS output J10.19
     
     PPS_Lock();
     
@@ -149,12 +181,13 @@ int InitUART2()
 
 void MapSPI1MasterPins()
 {
+    printf("Mapping SPI 1 Master Pins\n");
+
     UnlockPPS();
  
-    SDI1Rbits.SDI1R = 0b1010; //10;  // 0b1010 // RPC4  // SDI1
-    RPD0Rbits.RPD0R = 0b1000; // // SDO1
-//    RPD9Rbits.RPD9R = 7; //0b0111; // SS2
-    RPB2Rbits.RPB2R = 0b0111; //7; //0b0111; // SS2
+    SDI1Rbits.SDI1R = 0b1010; //10;  // 0b1010 // RPC4  // SDI1 // J10.44
+    RPD0Rbits.RPD0R = 0b1000; // // SDO1 // J10.43
+    RPB2Rbits.RPB2R = 0b0111; //7; //0b0111; // SS2 // J10.47
   
     LockPPS();
 
@@ -162,7 +195,7 @@ void MapSPI1MasterPins()
     mPORTCSetPinsDigitalIn(BIT_4);// SDI1 in
     CNPDCbits.CNPDC4 = 1; // pull down
 
-    mPORTDSetPinsDigitalOut(BIT_0);// SDO1 out
+    mPORTDSetPinsDigitalOut(BIT_0);// SDO1 out 
 
 //    mPORTDSetPinsDigitalOut(BIT_9);// SS1 out
 //    mPORTDSetBits(BIT_9); // set high by default}
@@ -170,12 +203,14 @@ void MapSPI1MasterPins()
 
     mPORTBSetPinsDigitalOut(BIT_2);// SS1 out
     mPORTBClearBits(BIT_2); // set high by default}
-    CNPDBbits.CNPDB2 = 1; // pull down
+    CNPUBbits.CNPUB2 = 1; // pull up
     
 }
 
 void MapSPI1SlavePins()
 {
+    printf("Mapping SPI 1 Slave Pins (SPI 1 Slave mode may not function properly!!)\n");
+
     UnlockPPS();
     
     // output pin SDO1
@@ -183,8 +218,8 @@ void MapSPI1SlavePins()
  
     // input pins SDI1 and SS1
 
-   //    SDI1Rbits.SDI1R = 0b1010;  // 0b1010 // RPC4  // SDI1
-    SDI1Rbits.SDI1R = 0b0010;  // 0b0010 // RPF5  // SDI1 // J10.52
+    SDI1Rbits.SDI1R = 0b1010;  // 0b1010 // RPC4  // SDI1
+//    SDI1Rbits.SDI1R = 0b0010;  // 0b0010 // RPF5  // SDI1 // J10.52
     SS1Rbits.SS1R = 0b1111; // RB2 // SS1 // J10.46
 
 //    RPB2Rbits.RPB2R = 0b0111; //0b0111; // SS1
@@ -193,15 +228,20 @@ void MapSPI1SlavePins()
 
     LockPPS();
 
-//    mPORTCSetPinsDigitalIn(BIT_4);// SDI1 in J10.44
-//    mPORTCClearBits(BIT_4);
-//    CNPDCbits.CNPDC4 = 1; // pull down
-    
-    mPORTFSetPinsDigitalIn(BIT_5);// SDI1 in J10.52
-    mPORTFClearBits(BIT_5);
-    CNPDFbits.CNPDF5 = 1;
-            
+//    TRISD
     mPORTDSetPinsDigitalIn(BIT_10);// SCK1 out J10.41
+    
+    // SPI1 at J10.44
+    mPORTCSetPinsDigitalIn(BIT_4);// SDI1 in J10.44
+    mPORTCClearBits(BIT_4);
+    CNPDCbits.CNPDC4 = 1; // pull up
+    
+    // SDI1 at J10.52
+//   
+//    mPORTFSetPinsDigitalIn(BIT_5);// SDI1 in J10.52
+//    mPORTFClearBits(BIT_5);
+//    CNPDFbits.CNPDF5 = 1;
+            
     
     mPORTDSetPinsDigitalOut(BIT_0);// SDO1 out // J10.43
 //    mPORTDSetPinsDigitalIn(BIT_9);// SS1 out
@@ -210,12 +250,15 @@ void MapSPI1SlavePins()
     
     mPORTBSetPinsDigitalIn(BIT_2);// SS1 in J10.46
     mPORTBClearBits(BIT_2); // set high by default}
+//    CNPUBbits.CNPUB2 = 1;
     CNPDBbits.CNPDB2 = 1;
 }
 
 
 void MapSPI2MasterPins()
 {
+    printf("Mapping SPI 2 Master Pins\n");
+
     PPS_Unlock();
  
     SDI2Rbits.SDI2R = 1; // RPG7 = 0b0001 // SDI2
@@ -238,6 +281,8 @@ void MapSPI2MasterPins()
 
 void MapSPI2SlavePins()
 {
+    printf("Mapping SPI 2 Slave Pins\n");
+
     PPS_Unlock();
  
     SDI2Rbits.SDI2R = 1; // RPG7 = 0b0001 // SDI2
@@ -246,7 +291,6 @@ void MapSPI2SlavePins()
     
     PPS_Lock();
     
-  
     mPORTGSetPinsDigitalIn(BIT_6);// SCK2 in
     mPORTGSetPinsDigitalIn(BIT_7);// SDI2 in
 //    CNPDGbits.CNPDG7 = 1; // pull down
@@ -351,7 +395,7 @@ void InitPWM(int pwm_frequency, int duty_cycle)
     int  samplerate = pwm_frequency;
 
     PPS_Unlock();
-    RPD1Rbits.RPD1R = 0b1100; // OC1
+    RPD1Rbits.RPD1R = 0b1100; // OC1 // J11.20
 //    RPD2Rbits.RPD2R = 0b1011; // OC3
     PPS_Lock();
 
@@ -510,7 +554,9 @@ void InitPWM_v2(int sample_rate)
 
 void InitSPI1Slave()
 {
-    printf("Mapping SPI 1 Slave Pins\n");
+//    printf("Mapping SPI 1 Slave Pins\n");
+    
+    
     MapSPI1SlavePins();
     
     SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MODE8 | SPI_CONFIG_ON |
@@ -520,9 +566,33 @@ void InitSPI1Slave()
 }
 
 
+void InitSPI2Slave()
+{
+//    printf("Mapping SPI 2 Slave Pins\n");
+    
+    MapSPI2SlavePins();
+    
+    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnSetBrg(SPI_CHANNEL2, baud_rate);
+    SpiChnEnable(SPI_CHANNEL2, 1);
+}
+
+
+void InitSPI1(int baud_rate)
+{
+    MapSPI1MasterPins();
+    
+    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN |  SPI_CONFIG_MSSEN | 
+                                                   SPI_CONFIG_MODE8 | SPI_CONFIG_ON |
+                                                   0));
+    SpiChnSetBrg(SPI_CHANNEL1, baud_rate);
+    SpiChnEnable(SPI_CHANNEL1, 1);
+}
+
+
 void InitSPI2(int baud_rate)
 {
-    printf("Mapping SPI 2 Pins\n");
+//    printf("Mapping SPI 2 Master Pins\n");
     MapSPI2MasterPins();
     
     SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSTEN |  SPI_CONFIG_MSSEN | 
@@ -1144,21 +1214,16 @@ void GetCurrentTime(int *sec, int *ms)
 
 void ReadSPI1Slave_test()
 {
-//    int buffer_length= 128;
-//    uint8_t *buffer = new uint8_t[buffer_length+10];
-//    char num_str[100];
-//    int idx = 0;
-//    int brate = 2;
-//
-    
-    InitSPI1Slave();
+//    InitSPI1Slave();
     char str[100] = "Hello World\n";
     
     SpiChnEnable(SPI_CHANNEL1, 0);
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
-    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+
+//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSSEN | SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
 
 //    SpiChnSetBrg(SPI_CHANNEL2, brate);
     SpiChnEnable(SPI_CHANNEL1, 1);
@@ -1170,15 +1235,173 @@ void ReadSPI1Slave_test()
     while(1)
     {
         printf("%d: Reading  \n", count);
+//        SpiChnPutC(SPI_CHANNEL1, 0xAA);
         data  = SpiChnGetC(SPI_CHANNEL1);
         
         int k=0; while(k++ < 1000);
         
-        SpiChnPutC(SPI_CHANNEL1, 0xAA);
+        SpiChnPutC(SPI_CHANNEL1, 0b10111011); // 0b10111011 = 187
         
         printf("%d: %d\n", count, data);
         count++;
         count %= 256;
     }
     
+}
+
+
+
+void ReadSPI2Slave_test()
+{
+    
+    SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
+
+//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+
+//    SpiChnSetBrg(SPI_CHANNEL2, brate);
+    SpiChnEnable(SPI_CHANNEL2, 1);
+
+    SPI2CONbits.ON = 1;
+
+    WaitMS(1);
+    
+    int data = 0;
+    int count = 0;
+    while(1)
+    {
+        printf("%d: Reading...  ", count);
+//        SpiChnPutC(SPI_CHANNEL1, 0xAA);
+        data  = SpiChnGetC(SPI_CHANNEL2);
+        
+        int k=0; while(k++ < 1000);
+  
+        SpiChnPutC(SPI_CHANNEL2, data); // 0b10111011 = 187
+//        SpiChnPutC(SPI_CHANNEL2, 0b10111011); // 0b10111011 = 187
+        
+        printf("rx %d\n", count, data);
+        count++;
+        count %= 256;
+    }
+    
+}
+
+
+void TestSPI1_Master()
+{
+    int data[2];
+    
+    
+    while(1)
+    {
+        SpiChnPutC(SPI_CHANNEL1, 0);
+        data[0] = SpiChnGetC(SPI_CHANNEL1);
+        
+        SpiChnPutC(SPI_CHANNEL1, 0);
+        data[0] = SpiChnGetC(SPI_CHANNEL1);
+        
+        int32_t  value = ((data[0] << 8) | data[1]) & 0xFFFF;
+        int32_t  vi = (value >> 2);
+        
+        printf("Value obtained %d, [%d, %d]\n", vi, (int)data[0], (int)data[1]);
+        WaitMS(1);
+
+    }
+}
+
+
+void Test_SPI2Slave_DataTransfer()
+{
+        int test_buffer_length = 15480;
+        UInt16Value *test_buffer = NULL;
+ 
+        test_buffer = (UInt16Value  *) AllocateMaxPossibleMemory(&test_buffer_length);
+
+        if(test_buffer == NULL)
+        {
+            printf("ERROR: Cannot allocate memory \n");
+            return;
+        }
+//        else
+//        {
+//            printf("Allocated memory size %d\n", test_buffer_length);
+//        }
+ 
+        int i =0;
+        int count  = 0;
+        
+        for(i = 0; i < test_buffer_length/2; i++)
+        {
+            int uval = count &0xFF00;
+            int lval = count & 0xFF;
+            test_buffer[i].v.upper = 1;
+            test_buffer[i].v.lower = 5;
+            
+        }
+        
+        int data_tx_count = 0;
+        
+        while(1)
+        {        
+        SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
+
+//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+        SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+
+//    SpiChnSetBrg(SPI_CHANNEL2, brate);
+        SpiChnEnable(SPI_CHANNEL2, 1);
+
+        SPI2CONbits.ON = 1;
+
+        WaitMS(1);
+        
+        int vv;
+
+//            if (test_buffer_length >= test_buffer_length)
+//                continue;
+
+            i = 0;
+
+            printf("Data Transfer started\n");
+        
+            int is_first = 1;
+            
+            while(i < test_buffer_length/2)
+            {
+//                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                int val  = SpiChnGetC(SPI_CHANNEL2);
+                if(is_first == 1)
+                {
+                    is_first = 0;
+//                    mPORTASetBits(BIT_0 | BIT_1);
+                }
+
+                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+
+//                vv = 0; while(vv++ < 100);
+
+                val  = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.lower);
+                
+                test_buffer_length += 2;
+                
+
+//                vv = 0; while(vv++ < 100);
+
+    //            printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
+                i++;
+            }
+
+            SpiChnClose(SPI_CHANNEL2);
+//            mPORTAClearBits(BIT_0 | BIT_1);
+            printf("Data Transfer finished\n");
+        }
+    
+        free(test_buffer);
 }

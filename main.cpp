@@ -175,40 +175,64 @@ void print_to_uart1()
 /*
  * 
  */
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
+    
+    float temp ; 
+
+    
+    InitSystem_Test();
+//    InitSystem_Test();
+
+
 
 //    mPORTDSetPinsDigitalOut(BIT_0);
-    mPORTBSetPinsDigitalOut(BIT_14);
-    
-    mPORTGSetPinsDigitalOut(BIT_9);
-    mPORTGSetPinsDigitalOut(BIT_8);
-    
-    
-    mPORTASetPinsDigitalOut(BIT_0 | BIT_1);
-    mPORTAClearBits(BIT_0 | BIT_1);
-    
-    mPORTDSetPinsDigitalOut(BIT_2);
-    
-    mPORTGClearBits(BIT_8);
-    mPORTGClearBits(BIT_9);
-    
-    
+//    mPORTBSetPinsDigitalOut(BIT_14);
+//    
+//    mPORTGSetPinsDigitalOut(BIT_9);
+//    mPORTGSetPinsDigitalOut(BIT_8);
+//    
+//    
+//    mPORTASetPinsDigitalOut(BIT_0 | BIT_1);
+//    mPORTAClearBits(BIT_0 | BIT_1);
+//    
+//    mPORTDSetPinsDigitalOut(BIT_2);
+//    
+//    mPORTGClearBits(BIT_8);
+//    mPORTGClearBits(BIT_9);
     
     
+    
+ 
 //    CNPDGbits.CNPDG8 = 0;
 //    CNPDGbits.CNPDG9 = 0;
 //    mPORTDClearBits(BIT_0);
-    
-    InitSystem();
-    
+//        SPI1_TempMeasurement_LM_Thermo_Test();
     CS_INIT();
     DPDT_INIT();
+    
+    
+//    SPI1_TempMeasurement_LM_Thermo_Test();
+    
+//    return 0;
+//    SPI1_TempMeasurement_LM_Thermo_Test();
+
+//    return 0;
+
     
 //    InitPWM(500, 50);
     
 //    InitTimer1(500);
 
     InitTimer1(10);
+    
+    printf("Timer set to 10 Hz\n");
+
+//    //    SPI1_TempMeasurement_Test();
+//    SPI1_TempMeasurement_LM_Thermo_Test();
+//    
+//    return 0;   
+
     
 //    InitSPI2(16);
     
@@ -233,18 +257,30 @@ int main(int argc, char** argv) {
 //    return 0;
     
     printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
+
+
+//    SPI1_TempMeasurement_Test();
+//    
+//    int idxx = 0;
+//    while(1)
+//    {
+//        printf("count %d\n", idxx++);
+//        WaitMS(1);
+//        
+//    }
+//    
     
+    Test_SPI2Slave_DataTransfer();
+//    return 0;
+//    ReadSPI2Slave_test();
+//    return 0;
+
+//    TestSPI1_Master();
+//    
 //    return 0;
     
     
-    InitSPI1Slave();
-    
-    
-    
-    ReadSPI1Slave_test();
-    
-    return 0;
-    AdjustTemperature(35.0);
+//    AdjustTemperature(35.0);
     return 0;
 
     time_t  tm;

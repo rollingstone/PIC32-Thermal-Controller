@@ -14,6 +14,10 @@ int DoAdjustTemperature = 0;
 uint16_t    timer_count = 0;
 
 
+//int     ThermoSPIChannel = SPI_CHANNEL1;
+
+#define     THERMO_SPI_CHANNEL  SPI_CHANNEL1
+
 
 void MapAllPins()
 {
@@ -27,14 +31,14 @@ float PmodTC1_Temperature()
 //    float value = 0;
     int data[4];
            
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[0] = SpiChnGetC(SPI_CHANNEL2);
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[1] = SpiChnGetC(SPI_CHANNEL2);
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[2] = SpiChnGetC(SPI_CHANNEL2);
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[3] = SpiChnGetC(SPI_CHANNEL2);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0);
+    data[0] = SpiChnGetC(THERMO_SPI_CHANNEL);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0);
+    data[1] = SpiChnGetC(THERMO_SPI_CHANNEL);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0);
+    data[2] = SpiChnGetC(THERMO_SPI_CHANNEL);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0);
+    data[3] = SpiChnGetC(THERMO_SPI_CHANNEL);
     
     int32_t  value = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
     int32_t  vi = (int32_t)value / (int32_t)(1 << 18);
@@ -56,12 +60,12 @@ float LM95071_Temperature()
 //    float value = 0;
     int data[4];
            
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[0] = SpiChnGetC(SPI_CHANNEL2);
-    SpiChnPutC(SPI_CHANNEL2, 0);
-    data[1] = SpiChnGetC(SPI_CHANNEL2);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0xAA);
+    data[0] = SpiChnGetC(THERMO_SPI_CHANNEL);
+    SpiChnPutC(THERMO_SPI_CHANNEL, 0xAA);
+    data[1] = SpiChnGetC(THERMO_SPI_CHANNEL);
     
-    int32_t  value = ((data[0] << 8) | data[1]) & 0xFFFF;
+    int32_t  value = (((int32_t) data[0] << 8) | (int32_t) data[1]) & 0xFFFF;
     int32_t  vi = (value >> 2) ;
        
     float temp = (float) vi * 0.03125;
@@ -299,7 +303,7 @@ void AdjustTemperature(float target_temp)
     InitPWM(1500,20);
    
 
-    InitSPI2(4);
+//    InitSPI1(4);
     
     DPDT_2(1);
     
@@ -318,7 +322,8 @@ void AdjustTemperature(float target_temp)
     
     while(1)
     {
-        if( ReadCommandFromUART2(command, command_length) )
+        
+        if( 0 && ReadCommandFromUART2(command, command_length) )
         {
             int k;
 
@@ -360,7 +365,7 @@ void AdjustTemperature(float target_temp)
                 
 //                int kk = 0; while(kk++ < 1000);
                 
-                mPORTASetBits(BIT_0);
+//                mPORTASetBits(BIT_0);
                 
                 WRITE_TO_UART2((uint32_t) cval.v.upper);
                 WRITE_TO_UART2((uint32_t) cval.v.lower);
@@ -405,7 +410,7 @@ void AdjustTemperature(float target_temp)
 //                WRITE_TO_UART2(4);
                 
                 current_idx = 0;
-                mPORTAClearBits(BIT_0);
+//                mPORTAClearBits(BIT_0);
 
                 
             }
@@ -422,9 +427,9 @@ void AdjustTemperature(float target_temp)
 //            mPORTGToggleBits(BIT_9);
 //            mPORTGToggleBits(BIT_8);
          
-            mPORTGSetBits(BIT_8);
-            mPORTGSetBits(BIT_9);
-            
+//            mPORTGSetBits(BIT_8);
+//            mPORTGSetBits(BIT_9);
+//            
 
             current_temp = LSD_Temperature();
 
@@ -545,8 +550,8 @@ void AdjustTemperature(float target_temp)
 //            asm("ei");
 
 
-            mPORTGClearBits(BIT_8);
-            mPORTGClearBits(BIT_9);
+//            mPORTGClearBits(BIT_8);
+//            mPORTGClearBits(BIT_9);
 
             DoAdjustTemperature = 0;
         }
@@ -609,7 +614,7 @@ void __ISR( _TIMER_1_VECTOR, IPL3AUTO) T1Interrupt(void)
 
     timer_count++;
     
-    mPORTBToggleBits(BIT_14);
+//    mPORTBToggleBits(BIT_14);
     
 //    printf("******** Interrupt T1 is called************\n");
     mT1ClearIntFlag();         // clear this interrupt .
@@ -643,3 +648,64 @@ void __ISR( _TIMER_1_VECTOR, IPL3AUTO) T1Interrupt(void)
 //    mT2ClearIntFlag();         // clear this interrupt .
 // } 
 
+void SPI1_TempMeasurement_Test()
+{
+    float temp = 0;
+        // SS1 ==> RB2
+    mPORTBSetPinsDigitalOut(BIT_2);
+    mPORTBSetBits(BIT_2); 
+    int kcount = 0;
+    CS_INIT();
+    
+    while(1)
+    {
+//       mPORTBClearBits(BIT_2); 
+       ADISCO_CS(CS_LOW);
+       
+//       PELTIER_TOP_CS(CS_LOW);
+//       PELTIER_BOTTOM_CS(CS_LOW);
+       temp = PmodTC1_Temperature();
+       
+       int frac_temp =(int) ( ((float) temp - ((float) (int) temp) ) * 1000.0 );
+
+//       PELTIER_BOTTOM_CS(CS_HIGH);
+       
+       PELTIER_TOP_CS(CS_HIGH);
+//       ADISCO_CS(CS_HIGH);
+//       mPORTBSetBits(BIT_2); 
+       
+       
+       printf("%d:\tTemperature == %d + (%d/1000)\n", kcount++, (int) temp, frac_temp);
+       WaitMS(100);
+    }
+}
+
+
+
+void SPI1_TempMeasurement_LM_Thermo_Test()
+{
+    float temp = 0;
+        // SS1 ==> RB2
+    mPORTBSetPinsDigitalOut(BIT_2);
+    mPORTBSetBits(BIT_2); 
+    int kcount = 0;
+    LSD_CS(CS_HIGH);
+    
+    while(1)
+    {
+       mPORTBClearBits(BIT_2); 
+       LSD_CS(CS_LOW);
+
+       temp = LM95071_Temperature();
+       
+       int frac_temp =(int) ( ((float) temp - ((float) (int) temp) ) * 1000.0 );
+       
+       LSD_CS(CS_HIGH);
+       mPORTBSetBits(BIT_2); 
+       
+       
+       printf("%d:\tTemperature == %d + (%d/1000)\n", kcount++, (int) temp, frac_temp);
+       WaitMS(1000);
+       break;
+    }
+}

@@ -77,6 +77,8 @@ typedef union __Int16Value_tag{
 
 #define     ABS_VALUE(val)          ( (val) < 0? (val):-(val) )
 
+#define     NOP()                   asm("nop")
+
     
 // Note that 612Hz (PR2=0xffff) is the lowest pwm frequency with our configuration
 // : To get lower, use a timer prescaler or use the 32-bit timer mode
@@ -84,6 +86,7 @@ typedef union __Int16Value_tag{
 #define         DUTY_CYCLE  10    
     
 void InitSystem();
+void InitSystem_Test();
 void InitPWM(int sample_rate, int duty_cycle);
 void InitPWM_v3(int pwm_frequency, int duty_cycle);
 
@@ -92,9 +95,13 @@ int  SetPWMDutyCycle(int pwm_number, int duty_cycle);
 void InitTimer1(uint32_t freq);
 
 void InitSPI1Slave();
+void InitSPI2Slave();
 
 
+void InitSPI1(int baud_rate);
 void InitSPI2(int baud_rate);
+
+
 int  InitUART1();
 int  InitUART2();
 void WaitMS(unsigned int ms);
@@ -134,6 +141,12 @@ BOOL ReadCommandFromUART2(int *command, int length);
 void *AllocateMaxPossibleMemory(uint32_t *data_length);
 
 void ReadSPI1Slave_test();
+void ReadSPI2Slave_test();
+
+void TestSPI1_Master();
+
+void Test_SPI2Slave_DataTransfer();
+
 
 
 
