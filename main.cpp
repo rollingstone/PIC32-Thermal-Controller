@@ -273,7 +273,14 @@ int main(int argc, char** argv)
 //    
     
 //    TestUART2();
-    Test_SPI2Slave_DataTransferWithUART2();
+    
+    TestSPi2Slave();
+
+//    Test_SPI2Slave_DataTransfer();
+    
+        
+//    Test_SPI2Slave_DataTransferWithUART2();
+//    Test_SPI2Slave_DataTransferWith_SPI2Command();
 //    return 0;
 
 //    return 0;

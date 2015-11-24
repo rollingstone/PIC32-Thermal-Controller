@@ -53,6 +53,9 @@ void InitSystem()
 
 void SystemReset()
 {
+//    InitUART1();
+//    
+//    printf("Reseting system....\n");
     /* The following code illustrates a software Reset */
     // assume interrupts are disabled
     // assume the DMA controller is suspended
@@ -85,13 +88,13 @@ void InitSystem_Test()
     InitUART1();
     __XC_UART = 1;
   
+    InitSPI1(32);
     InitSPI2Slave();    
     
-    InitSPI1(32);
-
+ 
 
     // disable for testing purposes
-    InitUART2();
+//    InitUART2();
 //
     
     printf("System speed %ld Hz\n", (long) SYS_FREQ);
@@ -102,6 +105,15 @@ void InitSystem_Test()
  
 }
 
+
+void RtccSetup()
+{
+    
+    RtccInit();
+    RtccSetup();
+    
+    
+}
 
 void WaitMS(unsigned int ms)
 {
@@ -1302,7 +1314,6 @@ void ReadSPI2Slave_test()
 
 //    SpiChnSetBrg(SPI_CHANNEL2, brate);
     SpiChnEnable(SPI_CHANNEL2, 1);
-
     SPI2CONbits.ON = 1;
 
     WaitMS(1);
@@ -1311,18 +1322,30 @@ void ReadSPI2Slave_test()
     int count = 0;
     while(1)
     {
+//        if(SPI2STATbits.SPIRBF == 0)
+//        {
+////            printf("Buffer is empty...\n  ");
+//            continue;
+//        }
+        
         printf("%d: Reading...  ", count);
 //        SpiChnPutC(SPI_CHANNEL1, 0xAA);
         data  = SpiChnGetC(SPI_CHANNEL2);
-        
-        int k=0; while(k++ < 1000);
-  
         SpiChnPutC(SPI_CHANNEL2, data); // 0b10111011 = 187
 //        SpiChnPutC(SPI_CHANNEL2, 0b10111011); // 0b10111011 = 187
+
+        int dummy = SPI2BUF;
+        
+        if(data == 0xFF)
+        {
+            break;
+        }
         
         printf("rx %d\n", count, data);
         count++;
         count %= 256;
+        WaitMS(1);
+
     }
     
 }
@@ -1353,7 +1376,7 @@ void TestSPI1_Master()
 
 void Test_SPI2Slave_DataTransfer()
 {
-        int test_buffer_length = 15480;
+        int test_buffer_length = 100;//15480;
         UInt16Value *test_buffer = NULL;
  
         test_buffer = (UInt16Value  *) AllocateMaxPossibleMemory(&test_buffer_length);
@@ -1375,8 +1398,8 @@ void Test_SPI2Slave_DataTransfer()
         {
             int uval = count &0xFF00;
             int lval = count & 0xFF;
-            test_buffer[i].v.upper = 1;
-            test_buffer[i].v.lower = 5;
+            test_buffer[i].v.upper = i+1;
+            test_buffer[i].v.lower = i+1+10;
             
         }
         
@@ -1409,24 +1432,29 @@ void Test_SPI2Slave_DataTransfer()
             printf("Data Transfer started\n");
         
             int is_first = 1;
+
+//            SpiChnPutC(SPI_CHANNEL2, test_buffer[0].v.upper);
+//            int tv = SPI2BUF; 
             
             while(i < test_buffer_length/2)
             {
-//                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                
                 int val  = SpiChnGetC(SPI_CHANNEL2);
+                
                 if(is_first == 1)
                 {
                     is_first = 0;
 //                    mPORTASetBits(BIT_0 | BIT_1);
                 }
-
                 SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
-
+                int tmp = SPI2BUF; // clear SPI2READ buffer
+ 
 //                vv = 0; while(vv++ < 100);
-
+ 
                 val  = SpiChnGetC(SPI_CHANNEL2);
                 SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.lower);
-                
+                tmp = SPI2BUF;
+               
                 test_buffer_length += 2;
                 
 
@@ -1445,11 +1473,9 @@ void Test_SPI2Slave_DataTransfer()
 }
 
 
-
-
 void Test_SPI2Slave_DataTransferWithUART2()
 {
-        int test_buffer_length = 1024*4;//15480;
+        int test_buffer_length = 100;//15480;
         UInt16Value *test_buffer = NULL;
  
         test_buffer = (UInt16Value  *) AllocateMaxPossibleMemory(&test_buffer_length);
@@ -1466,16 +1492,9 @@ void Test_SPI2Slave_DataTransferWithUART2()
  
         
         SpiChnEnable(SPI_CHANNEL2, 0);
-//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
-//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
-//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
-
-//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
         SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
-
-//    SpiChnSetBrg(SPI_CHANNEL2, brate);
         SpiChnEnable(SPI_CHANNEL2, 1);
-
+        
         SPI2CONbits.ON = 1;
 
 //        WaitMS(1);
@@ -1487,6 +1506,7 @@ void Test_SPI2Slave_DataTransferWithUART2()
         
         char command[10];
         int command_length = 3;
+        
         while(1)
         {
             int didx = 0;
@@ -1526,8 +1546,8 @@ void Test_SPI2Slave_DataTransferWithUART2()
                 {
                     int uval = count &0xFF00;
                     int lval = count & 0xFF;
-                    test_buffer[i].v.upper = 1;
-                    test_buffer[i].v.lower = 5;
+                    test_buffer[i].v.upper = i;
+                    test_buffer[i].v.lower = i+10;
 
                 }
 
@@ -1562,26 +1582,32 @@ void Test_SPI2Slave_DataTransferWithUART2()
                 while(i < test_buffer_length/2)
                 {
     //                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
-                    int val  = SpiChnGetC(SPI_CHANNEL2);
-                    if(is_first == 1)
-                    {
-                        is_first = 0;
-    //                    mPORTASetBits(BIT_0 | BIT_1);
-                    }
+                    int val1  = SpiChnGetC(SPI_CHANNEL2);
+                    
+                    if(val1 == 0xFF)
+                        break;
+                    
 
                     SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                    int tm = SPI2BUF;
 
     //                vv = 0; while(vv++ < 100);
 
-                    val  = SpiChnGetC(SPI_CHANNEL2);
+                    int val2  = SpiChnGetC(SPI_CHANNEL2);
                     SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.lower);
+                    tm = SPI2BUF;
+                    
+                    if(val2 == 0xFF)
+                        break;
 
+                    
                     test_buffer_length += 2;
 
 
     //                vv = 0; while(vv++ < 100);
 
         //            printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
+//                    printf('i == %d\n',i);
                     i++;
                 }
 
@@ -1596,6 +1622,192 @@ void Test_SPI2Slave_DataTransferWithUART2()
         free(test_buffer);
 }
 
+
+
+
+
+void Test_SPI2Slave_DataTransferWith_SPI2Command()
+{
+        int test_buffer_length = 100;//15480;
+        UInt16Value *test_buffer = NULL;
+ 
+        test_buffer = (UInt16Value  *) AllocateMaxPossibleMemory(&test_buffer_length);
+
+        if(test_buffer == NULL)
+        {
+            printf("ERROR: Cannot allocate memory \n");
+            return;
+        }
+//        else
+//        {
+//            printf("Allocated memory size %d\n", test_buffer_length);
+//        }
+ 
+        
+        SpiChnEnable(SPI_CHANNEL2, 0);
+        SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+        SpiChnEnable(SPI_CHANNEL2, 1);
+        
+        SPI2CONbits.ON = 1;
+
+//        WaitMS(1);
+        
+        
+//        TestUART2();
+        
+        printf("Waiting for UART command....,\n");
+        
+        char command[10];
+        int command_length = 3;
+        
+        while(1)
+        {
+            int didx = 0;
+            if(!SPI2STATbits.SPIRBE)
+            {
+                while(U2STAbits.URXDA && didx < 10)
+                {
+                    command[didx] = UARTGetDataByte(1);
+                    didx++;
+                }
+        
+                printf("Main command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                
+            }
+            
+            if(command[0] == 99)
+            {
+  
+                command[0] = 0;
+                command[1] = 0;
+                command[2] = 0;
+
+//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                
+                
+//                if(command[0] != 99)
+//                {
+//                    continue;
+//                }
+
+                
+//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                int i =0;
+                int count  = 0;
+
+                for(i = 0; i < test_buffer_length/2; i++)
+                {
+                    int uval = count &0xFF00;
+                    int lval = count & 0xFF;
+                    test_buffer[i].v.upper = i;
+                    test_buffer[i].v.lower = i+10;
+
+                }
+
+                UInt16Value dlen;
+
+                dlen._value = test_buffer_length;
+                
+                printf("Buffer length to send %d\n", test_buffer_length);
+                
+
+                WRITE_TO_UART2(dlen.v.upper);
+                WRITE_TO_UART2(dlen.v.lower);
+                
+                
+                printf("Two bytes sent upper === %d,     lower === %d\n", dlen.v.upper, dlen.v.lower);
+                
+//                continue;
+                
+                int data_tx_count = 0;
+
+                int vv;
+
+        //            if (test_buffer_length >= test_buffer_length)
+        //                continue;
+
+                i = 0;
+
+                printf("Data Transfer started\n");
+
+                int is_first = 1;
+
+                while(i < test_buffer_length/2)
+                {
+    //                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                    int val1  = SpiChnGetC(SPI_CHANNEL2);
+                    
+                    if(val1 == 0xFF)
+                        break;
+                    
+
+                    SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                    int tm = SPI2BUF;
+
+    //                vv = 0; while(vv++ < 100);
+
+                    int val2  = SpiChnGetC(SPI_CHANNEL2);
+                    SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.lower);
+                    tm = SPI2BUF;
+                    
+                    if(val2 == 0xFF)
+                        break;
+
+                    
+                    test_buffer_length += 2;
+
+
+    //                vv = 0; while(vv++ < 100);
+
+        //            printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
+//                    printf('i == %d\n',i);
+                    i++;
+                }
+
+                printf("Data Transfer finished\n");
+
+            }
+        }
+
+//        SpiChnClose(SPI_CHANNEL2);
+//            mPORTAClearBits(BIT_0 | BIT_1);
+        
+        free(test_buffer);
+}
+
+
+void SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
+{
+    int i = 0;
+    int word_len = data_length_in_bytes/2;
+    
+    int val;
+
+    printf("Sending %d bytes of data\n", data_length_in_bytes);
+
+    for(i = 0; i < word_len; i++)
+    {
+        val = SpiChnGetC(SPI_CHANNEL2);
+        SpiChnPutC(SPI_CHANNEL2, data[i].v.upper);
+        int tmp = SPI2BUF;
+        
+        if(val == 0xFF)
+            break;
+        
+        val = SpiChnGetC(SPI_CHANNEL2);
+        SpiChnPutC(SPI_CHANNEL2, data[i].v.lower);
+        tmp = SPI2BUF;
+        
+        if(val == 0xFF)
+            break;
+    }
+
+    printf("***  %d bytes SENT  ***\n", i*2);
+    
+    SPI2CONbits.ON = 0;
+    WaitMS(1);
+    SPI2CONbits.ON = 1;
+}
 
 
 
@@ -1622,4 +1834,71 @@ void TestUART2()
             tx %= 256;
         }
     }
+}
+
+
+
+void TestSPi2Slave()
+{
+    
+    
+        SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
+
+//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+        SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+
+//    SpiChnSetBrg(SPI_CHANNEL2, brate);
+        SpiChnEnable(SPI_CHANNEL2, 1);
+        
+        SPI2CONbits.ON = 1;
+    
+        int i = 0;
+        int tmp = 0;
+        int data_length = 100;
+   
+        
+        while(1)
+        {
+//            SPI2CONbits.ON = 1;
+            printf("Waiting to send %d bytes of data\n", data_length);
+            for(i = 0; i < data_length/2; i++)
+            {
+                int val  = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, i+1);
+                tmp = SPI2BUF;
+                
+                if(val == 0xFF)
+                {
+                    printf("val == %d, Exiting SPI2 read loop\n", val);
+                    break;
+                }
+                
+                int v = 0; while(v++ < 10);
+                
+                val  = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, i+1+10);
+                tmp = SPI2BUF;
+                
+                if(val  == 0xFF)
+                {
+                    printf("2nd level val == %d, Exiting SPI2 read loop\n", val);
+                    break;
+                }
+
+                
+//                printf(" i = %d\n", i);
+            }
+            
+//            printf("%i == d\n", i);
+            
+            printf("Data transfered\n");
+            SPI2CONbits.ON = 0;
+            WaitMS(1);
+            SPI2CONbits.ON = 1;
+        }
+
+        SpiChnClose(SPI_CHANNEL2);
 }

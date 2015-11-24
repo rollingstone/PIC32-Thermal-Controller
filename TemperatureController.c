@@ -343,7 +343,23 @@ void AdjustTemperature(float target_temp)
                 k++;
             }
             
-            if(command[0] == 1) // LSD
+            if(command[0] == 99)
+            {
+                printf("Request for sending data_buffer received....\n");
+
+                UInt16Value dv0;
+                
+                dv0._value = current_idx;
+
+                WRITE_TO_UART2(dv0.v.upper);
+                WRITE_TO_UART2(dv0.v.lower);
+                        
+                SendDataBySPI2Slave(data_buffer, current_idx);
+                current_idx = 0;
+                
+            }
+            
+            else if(command[0] == 1) // LSD
             {
                 if(command[1] == 1) // Set 1 , Get 0
                 {

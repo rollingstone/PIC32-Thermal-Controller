@@ -79,6 +79,9 @@ typedef union __Int16Value_tag{
 
 #define     NOP()                   asm("nop")
 
+#define     SPI2_SLAVE_READ()                       SpiChnGetC(SPI_CHANNEL2)
+#define     SPI2_SLAVE_WRITE(val, dummy)            { SpiChnPutC(SPI_CHANNEL2,(val)); dummy = SPI2BUF; }
+
     
 // Note that 612Hz (PR2=0xffff) is the lowest pwm frequency with our configuration
 // : To get lower, use a timer prescaler or use the 32-bit timer mode
@@ -150,9 +153,15 @@ void TestSPI1_Master();
 
 void Test_SPI2Slave_DataTransfer();
 void Test_SPI2Slave_DataTransferWithUART2();
+void Test_SPI2Slave_DataTransferWith_SPI2Command();
 
 
 void TestUART2();
+
+void TestSPi2Slave();
+
+void SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes);
+
 
 
 
