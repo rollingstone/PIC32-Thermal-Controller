@@ -78,7 +78,7 @@ void SystemReset()
 void InitSystem_Test()
 {
     SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
                                                               // you may run at PBclk of 72Mhz if you like too (omit this step)
                                                               // This will double the PWM frequency.
     
@@ -94,7 +94,7 @@ void InitSystem_Test()
  
 
     // disable for testing purposes
-//    InitUART2();
+    InitUART2();
 //
     
     printf("System speed %ld Hz\n", (long) SYS_FREQ);
@@ -1776,10 +1776,10 @@ void Test_SPI2Slave_DataTransferWith_SPI2Command()
 }
 
 
-void SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
+int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
 {
     int i = 0;
-    int word_len = data_length_in_bytes/2;
+    int word_len = data_length_in_bytes >> 1;
     
     int val;
 
@@ -1807,6 +1807,8 @@ void SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
     SPI2CONbits.ON = 0;
     WaitMS(1);
     SPI2CONbits.ON = 1;
+    
+    return i*2;
 }
 
 
@@ -1898,6 +1900,44 @@ void TestSPi2Slave()
             SPI2CONbits.ON = 0;
             WaitMS(1);
             SPI2CONbits.ON = 1;
+        }
+
+        SpiChnClose(SPI_CHANNEL2);
+}
+
+
+
+void TestSPi2Slave_WithSendData()
+{
+        int             buffer_length = 15000;
+        UInt16Value     buffer[buffer_length/2];
+    
+    
+        SpiChnEnable(SPI_CHANNEL2, 0);
+        SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+        SpiChnEnable(SPI_CHANNEL2, 1);
+        
+        SPI2CONbits.ON = 1;
+        
+        int k =0;
+        for(k = 0; k < buffer_length/2; k++)
+        {
+            int v = k % 90;
+            buffer[k].v.upper = v+1;
+            buffer[k].v.lower = v+1+10;
+        }
+        
+   
+        
+        while(1)
+        {
+//            SPI2CONbits.ON = 1;
+            printf("Waiting to send %d bytes of data\n", buffer_length);
+
+            int tx_len = SendDataBySPI2Slave(buffer, buffer_length);
+//            printf("%i == d\n", i);
+            
+            printf("Data transfered %d bytes\n", tx_len);
         }
 
         SpiChnClose(SPI_CHANNEL2);

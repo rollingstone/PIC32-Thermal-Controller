@@ -353,8 +353,8 @@ void AdjustTemperature(float target_temp)
 
                 WRITE_TO_UART2(dv0.v.upper);
                 WRITE_TO_UART2(dv0.v.lower);
-                        
-                SendDataBySPI2Slave(data_buffer, current_idx);
+                
+                SendDataBySPI2Slave(data_buffer, current_idx*2); // convert word idx to total bytes
                 current_idx = 0;
                 
             }
@@ -490,7 +490,6 @@ void AdjustTemperature(float target_temp)
 //              asm("di");
 //              mT1IntEnable(0);
 //              mT2IntEnable(0);
-
             
             int int_val, frac_val;
             SplitFloat2Ints(current_temp, &int_val, &frac_val);
@@ -525,7 +524,7 @@ void AdjustTemperature(float target_temp)
             }
 
 
-            current_idx += 5;
+            current_idx += 5; // 5 word = 10 bytes jump
 
 //                int t_ival = 
 

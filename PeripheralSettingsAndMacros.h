@@ -160,7 +160,9 @@ void TestUART2();
 
 void TestSPi2Slave();
 
-void SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes);
+int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes);
+
+void TestSPi2Slave_WithSendData();
 
 
 

@@ -274,7 +274,8 @@ int main(int argc, char** argv)
     
 //    TestUART2();
     
-    TestSPi2Slave();
+    TestSPi2Slave_WithSendData();
+//    TestSPi2Slave();
 
 //    Test_SPI2Slave_DataTransfer();
     
@@ -292,7 +293,7 @@ int main(int argc, char** argv)
 //    return 0;
     
     
-//    AdjustTemperature(35.0);
+    AdjustTemperature(35.0);
     return 0;
 
     time_t  tm;
