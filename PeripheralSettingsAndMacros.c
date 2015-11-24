@@ -40,9 +40,9 @@ void InitSystem()
     __XC_UART = 1;
   
     // disable for testing purposes
-//    InitUART2();
+    InitUART2();
 
-//    InitSPI2Slave();    
+    InitSPI2Slave();    
     
     InitSPI1(32);
     
@@ -85,12 +85,18 @@ void InitSystem_Test()
     InitUART1();
     __XC_UART = 1;
   
-    // disable for testing purposes
-    InitUART2();
-//
     InitSPI2Slave();    
     
     InitSPI1(32);
+
+
+    // disable for testing purposes
+    InitUART2();
+//
+    
+    printf("System speed %ld Hz\n", (long) SYS_FREQ);
+    printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
+
     
 //    InitSPI1Slave();
  
@@ -157,22 +163,29 @@ int InitUART2()
 //    mPORTCSetPinsDigitalIn(BIT_1 );
 //    mPORTCSetPinsDigitalOut(BIT_4);
     
-    mPORTDSetPinsDigitalOut(BIT_11);    // U2TX  J10.15
-    mPORTDSetPinsDigitalIn(BIT_10 );    // U2RX J10.16
+//    mPORTDSetPinsDigitalOut(BIT_11);    // U2TX  J10.15
+//    mPORTDSetPinsDigitalIn(BIT_10 );    // U2RX J10.16
+
     
     PPS_Unlock();
 
 //    U2RXRbits.U2RXR = 0b1010; // 0b0010; // RC1 input J10.18
 //    RPC4Rbits.RPC4R = 0b0001; // U2TX  UTX  J10.21
 
-    U2RXRbits.U2RXR = 0b0011; // 0b0010; // RD10 input J10.16
-    RPD11Rbits.RPD11R = 0b0001; // U2TX  UTX  J10.15
+//    U2RXRbits.U2RXR = 0b0011; // 0b0010; // RD10 input J10.16
+//    RPD11Rbits.RPD11R = 0b0001; // U2TX  UTX  J10.15
 
+    U2RXRbits.U2RXR = 0b1101; // 0b0010; // RA14 input J10.35
+    RPA15Rbits.RPA15R = 0b0001; // U2TX  UTX  J10.36
    
-    //    U2CTSRbits.U2CTSR = 0b1100; // RC3 .. Input  J10.20
+//    U2CTSRbits.U2CTSR = 0b1100; // RC3 .. Input  J10.20
 //    RPC2Rbits.RPC2R = 0b0001; // U2RTS 0b0011; RTS output J10.19
     
     PPS_Lock();
+
+    mPORTASetPinsDigitalIn(BIT_14);    // U2RX J10.35
+    mPORTASetPinsDigitalOut(BIT_15);    // U2TX  J10.36
+
     
     unsigned int brate;
     brate = 115200L;//115200L * 1L;
@@ -808,9 +821,12 @@ BOOL ReadCommandFromUART2(int *command, int length)
     int k;
     while(U2STAbits.URXDA && (idx < length))
     {
-        command[idx] = UARTGetDataByte(1);
+        int val = (int) UARTGetDataByte(1);
+        command[idx] = (char) val;
         idx++;
         k = 0; while(k++ < 1000);
+        
+        printf("Commane received %d\n", val);
     }
     
 //    U2STAbits.URXDA = 0;
@@ -1426,4 +1442,184 @@ void Test_SPI2Slave_DataTransfer()
         }
     
         free(test_buffer);
+}
+
+
+
+
+void Test_SPI2Slave_DataTransferWithUART2()
+{
+        int test_buffer_length = 1024*4;//15480;
+        UInt16Value *test_buffer = NULL;
+ 
+        test_buffer = (UInt16Value  *) AllocateMaxPossibleMemory(&test_buffer_length);
+
+        if(test_buffer == NULL)
+        {
+            printf("ERROR: Cannot allocate memory \n");
+            return;
+        }
+//        else
+//        {
+//            printf("Allocated memory size %d\n", test_buffer_length);
+//        }
+ 
+        
+        SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
+
+//    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+        SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+
+//    SpiChnSetBrg(SPI_CHANNEL2, brate);
+        SpiChnEnable(SPI_CHANNEL2, 1);
+
+        SPI2CONbits.ON = 1;
+
+//        WaitMS(1);
+        
+        
+//        TestUART2();
+        
+        printf("Waiting for UART command....,\n");
+        
+        char command[10];
+        int command_length = 3;
+        while(1)
+        {
+            int didx = 0;
+            if(U2STAbits.URXDA)
+            {
+                while(U2STAbits.URXDA && didx < 10)
+                {
+                    command[didx] = UARTGetDataByte(1);
+                    didx++;
+                }
+        
+                printf("Main command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                
+            }
+            
+            if(command[0] == 99)
+            {
+  
+                command[0] = 0;
+                command[1] = 0;
+                command[2] = 0;
+
+//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                
+                
+//                if(command[0] != 99)
+//                {
+//                    continue;
+//                }
+
+                
+//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
+                int i =0;
+                int count  = 0;
+
+                for(i = 0; i < test_buffer_length/2; i++)
+                {
+                    int uval = count &0xFF00;
+                    int lval = count & 0xFF;
+                    test_buffer[i].v.upper = 1;
+                    test_buffer[i].v.lower = 5;
+
+                }
+
+                UInt16Value dlen;
+
+                dlen._value = test_buffer_length;
+                
+                printf("Buffer length to send %d\n", test_buffer_length);
+                
+
+                WRITE_TO_UART2(dlen.v.upper);
+                WRITE_TO_UART2(dlen.v.lower);
+                
+                
+                printf("Two bytes sent upper === %d,     lower === %d\n", dlen.v.upper, dlen.v.lower);
+                
+//                continue;
+                
+                int data_tx_count = 0;
+
+                int vv;
+
+        //            if (test_buffer_length >= test_buffer_length)
+        //                continue;
+
+                i = 0;
+
+                printf("Data Transfer started\n");
+
+                int is_first = 1;
+
+                while(i < test_buffer_length/2)
+                {
+    //                SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+                    int val  = SpiChnGetC(SPI_CHANNEL2);
+                    if(is_first == 1)
+                    {
+                        is_first = 0;
+    //                    mPORTASetBits(BIT_0 | BIT_1);
+                    }
+
+                    SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.upper);
+
+    //                vv = 0; while(vv++ < 100);
+
+                    val  = SpiChnGetC(SPI_CHANNEL2);
+                    SpiChnPutC(SPI_CHANNEL2, test_buffer[i].v.lower);
+
+                    test_buffer_length += 2;
+
+
+    //                vv = 0; while(vv++ < 100);
+
+        //            printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
+                    i++;
+                }
+
+                printf("Data Transfer finished\n");
+
+            }
+        }
+
+//        SpiChnClose(SPI_CHANNEL2);
+//            mPORTAClearBits(BIT_0 | BIT_1);
+        
+        free(test_buffer);
+}
+
+
+
+
+void TestUART2()
+{
+    int count = 0;
+    int tx = 50;
+
+    printf("Reading UART2...\n");
+    
+    while(1)
+    {
+        if(U2STAbits.URXDA)
+        {
+            int val = (int) UARTGetDataByte(1); // UART2
+            
+            printf("%d:   UART2 read value %d\n", count++, val);
+
+            printf("%d:   Writing to UART2 %d\n", (int) tx);
+            
+            WRITE_TO_UART2(tx);
+            
+            tx += 15;
+            tx %= 256;
+        }
+    }
 }

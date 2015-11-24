@@ -149,7 +149,10 @@ void ReadSPI2Slave_test();
 void TestSPI1_Master();
 
 void Test_SPI2Slave_DataTransfer();
+void Test_SPI2Slave_DataTransferWithUART2();
 
+
+void TestUART2();
 
 
 

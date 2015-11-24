@@ -259,8 +259,7 @@ int main(int argc, char** argv)
 //    TestUART2DataSendToRaspberryPi();
 //    return 0;
     
-    printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
-
+ 
 
 //    SPI1_TempMeasurement_Test();
 //    
@@ -273,7 +272,10 @@ int main(int argc, char** argv)
 //    }
 //    
     
-//    Test_SPI2Slave_DataTransfer();
+//    TestUART2();
+    Test_SPI2Slave_DataTransferWithUART2();
+//    return 0;
+
 //    return 0;
 //    ReadSPI2Slave_test();
 //    return 0;
@@ -283,7 +285,7 @@ int main(int argc, char** argv)
 //    return 0;
     
     
-    AdjustTemperature(35.0);
+//    AdjustTemperature(35.0);
     return 0;
 
     time_t  tm;
