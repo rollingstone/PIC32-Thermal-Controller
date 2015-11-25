@@ -132,7 +132,7 @@ void MapPins()
     
 }
 
-float ConvertToLSDTemp(int value)
+inline float ConvertToLSDTemp(int value)
 {
     return (float)value * (0.3125);
 }

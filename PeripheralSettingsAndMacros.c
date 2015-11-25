@@ -1781,7 +1781,7 @@ int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
     int i = 0;
     int word_len = data_length_in_bytes >> 1;
     
-    int val;
+    int val, dummy;
 
     printf("Sending %d bytes of data\n", data_length_in_bytes);
 
@@ -1789,23 +1789,32 @@ int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
     {
         val = SpiChnGetC(SPI_CHANNEL2);
         SpiChnPutC(SPI_CHANNEL2, data[i].v.upper);
-        int tmp = SPI2BUF;
+        dummy = SPI2BUF;
         
         if(val == 0xFF)
+        {
             break;
+        }
         
         val = SpiChnGetC(SPI_CHANNEL2);
         SpiChnPutC(SPI_CHANNEL2, data[i].v.lower);
-        tmp = SPI2BUF;
+        dummy = SPI2BUF;
         
         if(val == 0xFF)
+        {
             break;
+        }
     }
 
     printf("***  %d bytes SENT  ***\n", i*2);
+
+    while(SPI2STATbits.SPIRBF)
+    {
+        dummy = SPI2BUF;
+    }
     
     SPI2CONbits.ON = 0;
-    WaitMS(1);
+//    WaitMS(10);
     SPI2CONbits.ON = 1;
     
     return i*2;
@@ -1909,7 +1918,7 @@ void TestSPi2Slave()
 
 void TestSPi2Slave_WithSendData()
 {
-        int             buffer_length = 15000;
+        int             buffer_length = 100;
         UInt16Value     buffer[buffer_length/2];
     
     
@@ -1923,8 +1932,10 @@ void TestSPi2Slave_WithSendData()
         for(k = 0; k < buffer_length/2; k++)
         {
             int v = k % 90;
-            buffer[k].v.upper = v+1;
-            buffer[k].v.lower = v+1+10;
+//            buffer[k].v.upper = v+1;
+//            buffer[k].v.lower = v+1+10;
+            
+            buffer[k]._value = (uint16_t) ( ( (float)v + 0.25 * (1 % 5)) * 100.0 );
         }
         
    
