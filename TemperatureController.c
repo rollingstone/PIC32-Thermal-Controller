@@ -271,7 +271,7 @@ void AdjustTemperature(float target_temp)
 //    }
     
     data_buffer = (UInt16Value *) AllocateMaxPossibleMemory(&data_buffer_length);
-    data_buffer2 = (UInt16Value *) AllocateMaxPossibleMemory(&data_buffer2_length);
+    data_buffer2 = NULL; // (UInt16Value *) AllocateMaxPossibleMemory(&data_buffer2_length);
             
     WaitMS(100);
     
@@ -281,11 +281,19 @@ void AdjustTemperature(float target_temp)
         return;
     }
     
-    if(data_buffer2 == NULL)
-    {
-        printf("ERROR: Cannot allocate memory for data_short (%d)\n", (int) data_buffer_length);
-        return;
-    }
+    
+//    SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnEnable(SPI_CHANNEL2, 1);
+//
+//    SPI2CONbits.ON = 1;
+
+    
+//    if(data_buffer2 == NULL)
+//    {
+//        printf("ERROR: Cannot allocate memory for data_short (%d)\n", (int) data_buffer_length);
+//        return;
+//    }
     InitializePID(40.0, 0, 0.1, 0, target_temp);
     SetTargetTemperature(target_temp);
  
@@ -332,7 +340,7 @@ void AdjustTemperature(float target_temp)
     while(1)
     {
         
-        if(ReadCommandFromUART2(command, command_length) )
+        if(ReadCommandFromUART1(command, command_length) )
         {
             int k;
 
@@ -349,16 +357,19 @@ void AdjustTemperature(float target_temp)
 
                 UInt16Value dv0;
                 
-                dv0._value = current_idx;
+                dv0._value = current_idx*2;
 
-                WRITE_TO_UART2(dv0.v.upper);
-                WRITE_TO_UART2(dv0.v.lower);
+                WRITE_TO_UART1(dv0.v.upper);
+                WRITE_TO_UART1(dv0.v.lower);
                 
-                SendDataBySPI2Slave(data_buffer, current_idx*2); // convert word idx to total bytes
+//                SPI1CONbits.ON = 0;
+                int rx_len = SendDataBySPI2Slave(data_buffer, current_idx*2); // convert word idx to total bytes
                 current_idx = 0;
+//                SPI1CONbits.ON = 1;
                 
+                printf("Data sent.... (%d)\n", rx_len);
+
             }
-            
             else if(command[0] == 1) // LSD
             {
                 if(command[1] == 1) // Set 1 , Get 0
@@ -392,25 +403,25 @@ void AdjustTemperature(float target_temp)
                 
 //                mPORTASetBits(BIT_0);
                 
-                WRITE_TO_UART2((uint32_t) cval.v.upper);
-                WRITE_TO_UART2((uint32_t) cval.v.lower);
+                WRITE_TO_UART1((uint32_t) cval.v.upper);
+                WRITE_TO_UART1((uint32_t) cval.v.lower);
                 
                 for(uidx = 0; uidx < current_idx; uidx+=5)
                 {
-                    WRITE_TO_UART2(data_buffer[uidx].v.upper);
-                    WRITE_TO_UART2(data_buffer[uidx].v.lower);
+                    WRITE_TO_UART1(data_buffer[uidx].v.upper);
+                    WRITE_TO_UART1(data_buffer[uidx].v.lower);
                   
-                    WRITE_TO_UART2(data_buffer[uidx+1].v.upper);
-                    WRITE_TO_UART2(data_buffer[uidx+1].v.lower);
+                    WRITE_TO_UART1(data_buffer[uidx+1].v.upper);
+                    WRITE_TO_UART1(data_buffer[uidx+1].v.lower);
 
-                    WRITE_TO_UART2(data_buffer[uidx+2].v.upper);
-                    WRITE_TO_UART2(data_buffer[uidx+2].v.lower);
+                    WRITE_TO_UART1(data_buffer[uidx+2].v.upper);
+                    WRITE_TO_UART1(data_buffer[uidx+2].v.lower);
 
-                    WRITE_TO_UART2(data_buffer[uidx+3].v.upper);
-                    WRITE_TO_UART2(data_buffer[uidx+3].v.lower);
+                    WRITE_TO_UART1(data_buffer[uidx+3].v.upper);
+                    WRITE_TO_UART1(data_buffer[uidx+3].v.lower);
 
-                    WRITE_TO_UART2(data_buffer[uidx+4].v.upper);
-                    WRITE_TO_UART2(data_buffer[uidx+4].v.lower);
+                    WRITE_TO_UART1(data_buffer[uidx+4].v.upper);
+                    WRITE_TO_UART1(data_buffer[uidx+4].v.lower);
                     
                     
 //                    WRITE_TO_UART2(data_buffer[uidx]._value*0);
@@ -517,6 +528,7 @@ void AdjustTemperature(float target_temp)
                 data_buffer[current_idx+2]._value = (uint16_t) (peltier_top * mvalue);
                 data_buffer[current_idx+3]._value = (uint16_t) (peltier_bottom * mvalue);
                 data_buffer[current_idx+4]._value = (uint16_t) (face_plate * mvalue);
+
             }
             else
             {
@@ -524,13 +536,23 @@ void AdjustTemperature(float target_temp)
             }
 
 
-            current_idx += 5; // 5 word = 10 bytes jump
 
 //                int t_ival = 
 
             printf("\tAdisco %-3d\t Peltier Top %-3d\t Peltier Bottom %-3d\tFace Plate %-03d\n", 
                         (int)adisco_temp, (int)peltier_top, (int)peltier_bottom, (int) face_plate);
 
+//            printf("\tLSD %-3d\tAdisco %-3d\t Peltier Top %-3d\t Peltier Bottom %-3d\tFace Plate %-03d\n", 
+//                        (int)data_buffer[current_idx]._value,
+//                        (int)data_buffer[current_idx+1]._value, 
+//                        (int)data_buffer[current_idx+2]._value, 
+//                        (int)data_buffer[current_idx+3]._value, 
+//                        (int)data_buffer[current_idx+4]._value);
+
+
+
+            current_idx += 5; // 5 word = 10 bytes jump
+            
 //                printf("\n\ error*100 == %d,\n Temperature == %d\n\n", (int)new_pid, (int)(error_val * 100.0), (int)current_temp);
 
 //                WRITE_TO_UART2(1);

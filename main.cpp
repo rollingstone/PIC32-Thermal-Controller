@@ -74,16 +74,6 @@ using namespace std;
 
 
 
-void _mon_putc(char c)
-{
-//   while (U2STAbits.UTXBF);
-//   U2TXREG = c;
-
-   U1TXREG = c;
-   while (U1STAbits.UTXBF);
-}
-
-
 
 //
 //void WaitMS(int ms)
@@ -181,9 +171,11 @@ int main(int argc, char** argv)
     float temp ; 
 
 //    SystemReset();
+
+//    SoftReset(); while(1);
     
     InitSystem_Test();
-//    InitSystem_Test();
+//    InitSystem();
 
 
 
@@ -271,16 +263,31 @@ int main(int argc, char** argv)
 //        
 //    }
 //    
+//    TestSpi2CReadCommand();
     
-//    TestUART2();
+//    return 0;
+//    
+//    TestUART1DataReadWrite();
     
-    TestSPi2Slave_WithSendData();
+/************************************/
+
+    
+//    TestSPi2Slave_WithSendData_WithSPI2Command();
+/*************************************/    
+    //***************************************
+    
+//    TestSPi2Slave_WithSendData();
+    
+    //***************************************
+    
+    
 //    TestSPi2Slave();
 
 //    Test_SPI2Slave_DataTransfer();
     
         
-//    Test_SPI2Slave_DataTransferWithUART2();
+//    Test_SPI2Slave_DataTransferWithUART1();
+    
 //    Test_SPI2Slave_DataTransferWith_SPI2Command();
 //    return 0;
 

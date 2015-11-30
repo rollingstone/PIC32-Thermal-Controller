@@ -80,7 +80,9 @@ typedef union __Int16Value_tag{
 #define     NOP()                   asm("nop")
 
 #define     SPI2_SLAVE_READ()                       SpiChnGetC(SPI_CHANNEL2)
-#define     SPI2_SLAVE_WRITE(val, dummy)            { SpiChnPutC(SPI_CHANNEL2,(val)); dummy = SPI2BUF; }
+#define     SPI2_SLAVE_WRITE(val, dummy)            {SpiChnPutC(SPI_CHANNEL2,(val)); dummy = SPI2BUF; }
+
+#define     SPI2_CLEAR_READ_BUF(dummy)                        {while(SPI2STATbits.SPIRBF) dummy = SPI2BUF;}
 
     
 // Note that 612Hz (PR2=0xffff) is the lowest pwm frequency with our configuration
@@ -142,7 +144,11 @@ void ShowFloatData(float *data, int length);
 void WaitReadUART2();
 
 BOOL IsDataWaitingUART2();
+
+BOOL ReadCommandFromUART1(int *command, int length);
 BOOL ReadCommandFromUART2(int *command, int length);
+
+BOOL ReadCommandFromSPI2(int *command, int length);
 
 void *AllocateMaxPossibleMemory(uint32_t *data_length);
 
@@ -153,18 +159,30 @@ void TestSPI1_Master();
 
 void Test_SPI2Slave_DataTransfer();
 void Test_SPI2Slave_DataTransferWithUART2();
+
+void Test_SPI2Slave_DataTransferWithUART1();
+
+
 void Test_SPI2Slave_DataTransferWith_SPI2Command();
 
 
 void TestUART2();
+void TestUART1DataReadWrite();
+
 
 void TestSPi2Slave();
 
 int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes);
+int SendDataBySPI2SlaveWithTimeOut(UInt16Value *data, int data_length_in_bytes, int time_out_loop);
+
 
 void TestSPi2Slave_WithSendData();
+void TestSPi2Slave_WithSendData_WithSPI2Command();
+
+void TestSpi2CReadCommand();
 
 
+inline void SPI2CleanReadBuffer();
 
 
 #ifdef	__cplusplus
