@@ -85,80 +85,10 @@ using namespace std;
 //    }
 //}
 
-void InitPrintToUART2()
-{
-    
-    mPORTFSetPinsDigitalOut(BIT_12);    // CTS
-    mPORTFSetPinsDigitalIn(BIT_13);     // RTS
-    
-    mPORTFSetPinsDigitalIn(BIT_4);      // RxD
-    mPORTFSetPinsDigitalOut(BIT_5);     // TxD
-
-    PPS_Unlock();
-    {
-        U2CTSRbits.U2CTSR = 0b1001; // RF12
-        RPF13Rbits.RPF13R  = 1; // U2RTS 
-        
-        U2RXRbits.U2RXR = 2; // 0b0010; // RF4 input J11.46
-        RPF5Rbits.RPF5R = 1; //0b0011; TX output J11.48
-    }
-    PPS_Lock();
-
-    
-    __XC_UART = 2; //and the following 3 lines are necessary for stdout redirection
-            
-    U2MODEbits.BRGH = 1;               // Set High speed mode
-    U2BRG = UBRG(UART2_BAUD);          // Configure Baud Rate
-    setbuf(stdout, NULL);
-    
-    U2MODEbits.ON = 1;
-    
-}
-
-void MapPins()
-{
-    
-    
-    
-}
 
 inline float ConvertToLSDTemp(int value)
 {
     return (float)value * (0.3125);
-}
-
-
-void Test(int val)
-{
-}
-
-
-
-void print_to_uart1()
-{
-    
-    mPORTDSetPinsDigitalOut(BIT_0 | BIT_1 | BIT_2);
-//    mPORTDSetBits(BIT_0 | BIT_1 | BIT_2);
-    InitUART1();
-    
-    __XC_UART = 1;
-    
-    int count = 0;
-    
-    while(1)
-    {
-//        UART_SendNumberAsString(count++);
-        count++;
-//        WaitMS(1);
-        
-        int i = 100000;
-        
-        while(i-- > 0);
-        
-//        mPORTDToggleBits(1 << (count % 3));
-//        printf("\n test hello world %d\n", count);
-    }
-    
 }
 
 
@@ -176,7 +106,48 @@ int main(int argc, char** argv)
     
     InitSystem_Test();
 //    InitSystem();
+    
+    
+//        TestSPi2Slave();
 
+
+//    TestHyperADC_SPI2Slave_Read();
+    
+//    TestSPI1Master_To_SPI2SlaveData_Transfer(8L*1000000L);
+    
+    
+//    return 0;
+    
+    uint32_t *data0;
+    uint32_t data_len = 1024 * 64;
+    
+    uint32_t bmx_sz = BMXDRMSZ;
+    uint32_t bmx_pfm_sz = BMXPFMSZ;
+    
+//    data0 = (uint32_t *)AllocateMaxPossibleMemory(&data_len);
+    
+    
+    printf("data_len %d\n", data_len);
+
+    printf("BMXDRMSZ %X\n", bmx_sz);
+    printf("BMXPFMSZ %X\n", bmx_pfm_sz);
+    
+
+
+    printf("BMXDUDBA %X\n", BMXDUDBA);
+    printf("BMXDUPBA %X\n", BMXDUPBA);
+
+
+
+    printf("BMXDKPBA %X\n", BMXDKPBA);
+    
+//    while(1)
+//        
+//    {
+//        
+//    }
+//    
+//    return 0;
 
 
 //    mPORTDSetPinsDigitalOut(BIT_0);
@@ -280,7 +251,14 @@ int main(int argc, char** argv)
     
     //***************************************
     
-    
+//    int c00 = 0;
+//    
+//    while(1)
+//    {
+//        printf("c00 = %d\n", c00++);
+//        WaitMS(1000);
+//    }
+//    
 //    TestSPi2Slave();
 
 //    Test_SPI2Slave_DataTransfer();
@@ -552,6 +530,4 @@ int main(int argc, char** argv)
     
     return 0;
 }
-
-
 

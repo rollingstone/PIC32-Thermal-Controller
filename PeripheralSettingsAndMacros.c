@@ -4,6 +4,7 @@
 #include <plib.h>
 #include <xc.h>
 #include <time.h>
+//#include <proc/p32mz2048ech144.h>
 
 volatile int PWM1_Value = 10;
 volatile int PWM2_Value = 100;
@@ -24,6 +25,11 @@ int DutyCyclePWM1 = 50;
 
 BOOL    DoReadUART2 = FALSE;
 
+int32_t     HyperADC_RX32 = 0;
+
+
+BOOL IsDataReady = FALSE;
+
 
 void _mon_putc(char c)
 {
@@ -38,11 +44,15 @@ void _mon_putc(char c)
 void InitSystem()
 {
     SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
                                                               // you may run at PBclk of 72Mhz if you like too (omit this step)
                                                               // This will double the PWM frequency.
     
 
+    
+    mBMXDisableDRMWaitState();
+    CheKseg0CacheOn();
+//    mSy
 //    SYSTEMConfigPB()
     INTEnableSystemMultiVectoredInt();
     
@@ -61,19 +71,45 @@ void InitSystem()
 void InitSystem_Test()
 {
     SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
                                                               // you may run at PBclk of 72Mhz if you like too (omit this step)
                                                               // This will double the PWM frequency.
     
     INTEnableSystemMultiVectoredInt();
+
+//    BMXDRMSZ = 0x20000;
+//    BMXPFMSZ = 0x20000;
+
     
+    /*    
+//    BMXCONbits.BMXARB = 2;
+    
+//    BMXDKPBA = 10 * 1024;
+            
+//    BMXDUDBA = 0x10000;
+//    BMXDUPBA = 0x10000;
+    
+    
+//    BMXCONbits.BMXWSDRM;
+    
+//    mBMXSetRAMKernProgOffset(0x80000000);
+//    mBMXSetFlashUserPartition(0x10000);
+*/
+            
+       
+    mBMXDisableDRMWaitState();
+    CheKseg0CacheOn();
+
     InitUART1();
     InitUART2();    // print with UART2
     __XC_UART = 2;
  
   
-    InitSPI1(64);
+    InitSPI1(128);
     InitSPI2Slave();    
+    
+    
+    
 
     printf("System speed %ld Hz\n", (long) SYS_FREQ);
     printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
@@ -116,6 +152,7 @@ void RtccSetup()
     
 }
 
+
 void WaitMS(unsigned int ms)
 {
     unsigned int count = 0;
@@ -124,7 +161,7 @@ void WaitMS(unsigned int ms)
     while(count++ < ms)
     {
         i = 0;
-        while(i++ < 10000)
+        while(i++ < MS_LOOP)
         {
             NOP();
         }
@@ -204,7 +241,9 @@ int InitUART2()
     
     unsigned int brate;
     brate = 115200L;//115200L * 1L;
-//    brate = 256000L;//115200L * 1L;
+//    brate = 500000L;//115200L * 1L;
+
+    //    brate = 256000L;//115200L * 1L;
 //    brate = 921600L;
     
 //    U2MODEbits.BRGH = 4;
@@ -319,7 +358,7 @@ void MapSPI2MasterPins()
     PPS_Lock();
 
     mPORTGSetPinsDigitalOut(BIT_6);// SCK2 out
-    mPORTGSetPinsDigitalIn(BIT_7);// SDI2 in
+    mPORTGSetPinsDigitalIn(BIT_7);// SDI2 in J10.24
     
     CNPDGbits.CNPDG7 = 1; // pull down
 
@@ -336,20 +375,20 @@ void MapSPI2SlavePins()
 
     PPS_Unlock();
  
-    SDI2Rbits.SDI2R = 1; // RPG7 = 0b0001 // SDI2
+    SDI2Rbits.SDI2R = 1; // RPG7 = 0b0001 // SDI2  SDI2 in J10.24
     RPG8Rbits.RPG8R = 6; //0b0110; // SDO2
     SS2Rbits.SS2R = 1;// RPG9 input
     
     PPS_Lock();
     
-    mPORTGSetPinsDigitalIn(BIT_6);// SCK2 in
-    mPORTGSetPinsDigitalIn(BIT_7);// SDI2 in
+    mPORTGSetPinsDigitalIn(BIT_6);// SCK2 in J10.23
+    mPORTGSetPinsDigitalIn(BIT_7);// SDI2 in J10.24
 //    CNPDGbits.CNPDG7 = 1; // pull down
     mPORTGClearBits(BIT_7);
     mPORTGSetPinsDigitalOut(BIT_8);// SDO2 out
-    CNPDGbits.CNPDG7 = 1;
+//    CNPDGbits.CNPDG7 = 1;
   
-    mPORTGSetPinsDigitalIn(BIT_9);// SS2 in // RG9
+    mPORTGSetPinsDigitalIn(BIT_9);// SS2 in // RG9  // J10.26
     CNPDGbits.CNPDG9 = 1; // pull down
     mPORTGClearBits(BIT_9); // set low by default
 }
@@ -367,7 +406,7 @@ int SetPWMDutyCycle(int pwm_number, int duty_cycle)
     int dval;
     if(pwm_number == 1)
     {
-        OC1RS = (PR2 + 1) * ((float)duty_cycle / 100.0);
+        OC1RS = (PR2 + 1) * ((float)duty_cycle / 100.0);    //J10.20
         return OC1RS;
     }
     
@@ -2682,4 +2721,393 @@ void TestSpi2CReadCommand()
     }
     
     
+}
+
+
+
+void TestSPI1Master_To_SPI2SlaveData_Transfer(uint32_t spi_speed)
+{
+    int dummy = 0;
+
+    int tx_rx_data_len = 1000;
+    int tx1_len = tx_rx_data_len;
+    int rx1_len = tx_rx_data_len;
+    int tx2_len = tx_rx_data_len;
+    int rx2_len = tx_rx_data_len;
+
+    int tx1_buffer[tx1_len];
+    int rx1_buffer[rx1_len];
+    int tx2_buffer[tx2_len];
+    int rx2_buffer[rx2_len];
+    
+    
+//    InitSPI1(brate);
+//    InitSPI2Slave();
+    
+    uint32_t brate = SpiBrgVal(SYS_FREQ, spi_speed);
+    
+    SpiChnEnable(SPI_CHANNEL1, 0);
+    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN |  SPI_CONFIG_FRMEN |
+                                                   /*SPI_CONFIG_CKE_REV*/ 0 | SPI_CONFIG_MODE8 | SPI_CONFIG_ON
+                                                   ));
+    SpiChnSetBrg(SPI_CHANNEL1, brate);
+    SpiChnEnable(SPI_CHANNEL1, 1);
+    
+    
+    
+    
+    
+    SpiChnEnable(SPI_CHANNEL2, 0);
+    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_FRMEN  |
+                                                    /*SPI_CONFIG_CKE_REV*/ 0 | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+    SpiChnEnable(SPI_CHANNEL2, 1);
+
+    SPI2CONbits.ON = 1;
+    
+    int tx1 = 0;
+    int tx2;
+    
+    printf("Starting SPI1 -> SPI2 transver\n");
+    
+    int idx = 0;
+    while(1)
+    {
+        idx = 0;
+        while(idx < tx_rx_data_len)
+        {
+             tx2 = tx1 + 10;
+
+             SpiChnPutC(SPI_CHANNEL1, tx1);
+
+             int rx2 = SpiChnGetC(SPI_CHANNEL2);
+             SpiChnPutC(SPI_CHANNEL2, tx2);
+             dummy = SPI2BUF;
+
+             int rx1 = 0;
+             
+//             rx1 = 0; //SpiChnGetC(SPI_CHANNEL1);
+             rx1 = SpiChnGetC(SPI_CHANNEL1);
+             
+             tx1_buffer[idx] = tx1;
+             rx1_buffer[idx] = rx1;
+
+             tx2_buffer[idx] = tx2;
+             rx2_buffer[idx] = rx2;
+
+             tx1 = (tx1 + 1) % 200;
+
+             idx++;
+
+        }
+        
+        idx = 0;
+        
+        while(idx++ < tx_rx_data_len)
+        {
+            printf("tx1   %3d\trx2   %3d\ttx2   %3d\trx1   %3d\n", 
+                                        tx1_buffer[idx],
+                                        rx2_buffer[idx],
+                                        tx2_buffer[idx],
+                                        rx1_buffer[idx]);
+
+            tx1_buffer[idx] = 0;
+            rx1_buffer[idx] = 0;
+
+            tx2_buffer[idx] = 0;
+            rx2_buffer[idx] = 0;
+
+            int k = 0; while(k++ < 1000);
+        }
+       
+    }
+}
+
+
+void InitDMA_DMA_Spi2Slave()
+{
+    
+    
+    
+    
+}
+
+
+
+void InitExtINTs()
+{
+    UnlockPPS();
+    
+    INT1Rbits.INT1R = 0b0010;   // INT1 input RB14, J10.59
+    
+    LockPPS();
+
+    mPORTBSetPinsDigitalIn(BIT_14); // J11.34 INT1
+
+    ConfigINT1(EXT_INT_ENABLE | RISING_EDGE_INT | EXT_INT_PRI_7);
+    SetSubPriorityINT1(EXT_INT_SUB_PRI_0);
+}
+
+
+#define         HYPER_ADC_CS(val)       {LATDbits.LATD9  = val;}
+
+void InitHyperADCPins()
+{
+    InitExtINTs();
+
+//    mPORTASetPinsDigitalOut(BIT_3 | BIT_14 | BIT_15);
+
+    mPORTDSetPinsDigitalOut(BIT_11 | BIT_8 | BIT_9); // J11... 24 25 26
+
+    mPORTBSetPinsDigitalIn(BIT_5); // J11. 29
+    mPORTBClearBits(BIT_5); // J11. 29   // SCKL SEL  = 0;
+    
+    mPORTDSetBits(BIT_8);  // J11.25   MultiPin High
+    
+    mPORTDSetBits(BIT_9); // J11.26   CS 
+    
+
+    mPORTDSetBits(BIT_11); // J11.24  Not used
+
+    
+//    mPORTBSetPinsDigitalOut(BIT_0);
+    
+    
+//    mPORTDSetBits(BIT_10| BIT_11 | BIT_8 | BIT_9); // J11: 24 25 26
+//    
+//    
+//    mPORTDClearBits(BIT_10); // SCLK SEL, J11: 23
+//
+//    mPORTBClearBits(BIT_5);
+    
+//    mPORTAClearBits(BIT_15); // J11.37  SCLK SEL to internal
+//    
+//    mPORTASetBits(BIT_14); // J11. 35for Drate0/ Fpath..... the 1 bit settings
+//    
+//    mPORTASetBits(BIT_3); // J11.36 SPI CS to internal
+    
+}
+
+//#define HYPER_ADC_PIN_INIT()       
+
+
+
+void TestHyperADC_SPI2Slave_Read()
+{
+    
+    int data_length = 10000;
+    int data[data_length];
+    
+    InitHyperADCPins();
+    
+    SpiChnEnable(SPI_CHANNEL2, 0);
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN | SPI_CONFIG_CKE_REV| SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)( SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE32| SPI_CONFIG_ON));
+//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_FRMEN |  SPI_CONFIG_MODE32| SPI_CONFIG_ON));
+    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_FRMEN |
+                                                   SPI_CONFIG_FSP_IN |
+                                                   SPI_CONFIG_CKE_REV  | 
+                                                   SPI_CONFIG_CKP_HIGH |
+                                                   SPI_CONFIG_MODE32   | 
+                                                   SPI_CONFIG_ON |
+                                                   SPI_CONFIG_DISSDO));
+
+    SpiChnEnable(SPI_CHANNEL2, 1);
+
+    SPI2CONbits.ON = 1;
+    
+    WaitMS(10);
+    
+    
+    int idx = 0;
+    int dummy = 0;
+    
+//    mPORTAClearBits(BIT_3);
+    
+    HYPER_ADC_CS(0);
+    
+    printf("Toggling ....\n");
+    
+    uint32_t data_ready_count = 0;
+    
+//    mPORTD
+    
+//    mPORTASetPinsDigitalOut(BIT_9); // J11.51
+ 
+    
+       
+//    while(1)
+//    {
+//        if((data_ready_count++ % 10) == 0)
+//            mPORTAToggleBits(BIT_9);
+//        
+//        if(IsDataReady)
+//        {
+//            printf("Data ready called %d times\n", data_ready_count);
+//
+//            IsDataReady = FALSE;
+//        }
+//    }
+ 
+
+    
+//    while(1)
+//    {
+//        if(IsDataReady)
+//        {
+//            if((data_ready_count++ % 10000000L) == 0)
+//            {
+//                printf("Data ready called %d times\n", data_ready_count);
+//            }
+//
+//            IsDataReady = FALSE;
+//        }
+//    }
+    
+    
+    
+    
+//    while(1)
+//    {
+////        HYPER_ADC_CS(0);
+// 
+////        mPORTBToggleBits(BIT_0);
+//
+////        mPORTDToggleBits(BIT_11 | BIT_8 | BIT_9); // J11... 23 24 25 26
+////        mPORTBToggleBits(BIT_5);
+//        WaitMS(1);
+//
+////        HYPER_ADC_CS(0);
+//
+//    }
+    
+    int rx1, rx2, rx3, rx4;
+    
+    
+    printf("Reading HyperADC data\n");
+    
+    data_ready_count  = 0;
+            
+    while(1)
+    {
+        if(IsDataReady | 1)
+        {
+//            mPORTAClearBits(BIT_9);
+
+//             if((data_ready_count++ % 10000000L) == 0)
+//            {
+//                printf("Data ready called %d times\n", data_ready_count);
+//            }
+            
+//            rx1 = SPI2BUF;
+//            SPI2BUF = 1;
+//            rx2 = SPI2BUF;
+//            SPI2BUF = 2;
+//            rx3 = SPI2BUF;
+//            SPI2BUF = 4;
+//            rx4 = SPI2BUF;
+//            SPI2BUF = 8;
+            
+            
+//            rx1 = SpiChnGetC(SPI_CHANNEL2);
+//            SpiChnPutC(SPI_CHANNEL2, 1);
+//            rx2 = SpiChnGetC(SPI_CHANNEL2);
+//            SpiChnPutC(SPI_CHANNEL2, 2);
+//            rx3 = SpiChnGetC(SPI_CHANNEL2);
+//            SpiChnPutC(SPI_CHANNEL2, 4);
+                
+//            mPORTASetBits(BIT_9);
+            
+            rx1 = SPI2BUF;
+            
+//            data[idx] = ((int32_t)((rx1 << 16) + (rx2 << 8) + (rx3 ))) ;
+//            data[idx] = (int32_t) rx1;
+
+            data[idx] = (int32_t) rx1;//HyperADC_RX32;;
+
+            idx++;
+            
+            if(idx >= data_length)
+            {
+                SPI2CONbits.ON = 0;
+                int j = 0;
+            
+                while(j < data_length)
+                {
+                    printf("%d:\t%X\n", j, data[j]);
+                    data[j] = 0;
+                    j++;
+                }
+
+                idx = 0;
+
+                SPI2CONbits.ON = 1;
+                SPI2CONbits.ON = 1;
+                SPI2CONbits.ON = 1;
+            }
+            
+            IsDataReady = FALSE;
+        }
+        
+        int k = 0;
+
+//        if(idx % data_length == 0)
+//        {
+//            for(k = 0; k < data_length; k++)
+//            {
+//                printf("%X\n", data[k]);
+//            }
+//            idx = 0
+//        }
+//    
+        IsDataReady = FALSE;
+
+    }
+
+//    data_ready_counter  = 0;
+    while(1)
+    {
+        if(IsDataReady)
+        {
+            idx = 0;
+            while(idx < data_length)
+            {
+                rx1 = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, 1);
+                rx2 = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, 2);
+                rx3 = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, 4);
+ 
+                rx4 = SpiChnGetC(SPI_CHANNEL2);
+                SpiChnPutC(SPI_CHANNEL2, 8);
+
+                data[idx] = ((int32_t)((rx1 << 24) + (rx2 << 16) + (rx3 << 8))) >> 8;
+
+                idx++;
+            }
+            
+            idx = 0;
+            for(idx = 0; idx < data_length; idx++)
+            {
+                printf("%d:\t%X\n", idx, data[idx]);
+            }
+            IsDataReady = FALSE;
+        }
+    }
+}
+
+
+
+
+void __ISR(_EXTERNAL_1_VECTOR, IPL7SRS) __INT1Handler()
+{
+    HyperADC_RX32 = SPI2BUF;
+//    HyperADC_RX32 = SpiChnGetC(SPI_CHANNEL2);
+    
+    IsDataReady = TRUE;
+    
+//    printf("Data Ready triggered\n");
+    mINT1ClearIntFlag();
+
 }

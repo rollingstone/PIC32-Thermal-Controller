@@ -37,10 +37,13 @@ typedef union __Int16Value_tag{
 
 
 #define CPU_CLOCK               (80*1000000L)
+//#define CPU_CLOCK               (96L*1000000L)
 
 #define SYS_FREQ                    CPU_CLOCK
 #define	GetPeripheralClock()		(SYS_FREQ/(1 << OSCCONbits.PBDIV))
 #define	GetInstructionClock()		(SYS_FREQ)
+
+#define MS_LOOP                 ((uint32_t)( (((double)80000 )) / ((double)800000000L / (double)SYS_FREQ)))
 
 
 #define PBUS_CLOCK                  GetPeripheralClock()
@@ -183,6 +186,13 @@ void TestSpi2CReadCommand();
 
 
 inline void SPI2CleanReadBuffer();
+
+
+void TestSPI1Master_To_SPI2SlaveData_Transfer(uint32_t brate);
+
+
+void InitExtINTs();
+void TestHyperADC_SPI2Slave_Read();
 
 
 #ifdef	__cplusplus
