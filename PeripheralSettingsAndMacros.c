@@ -573,43 +573,20 @@ void InitTimer1(uint32_t freq)
 {
     int freq_val = ((int)SYS_FREQ/ (freq))-1;
     
+    T1CONbits.ON = 0;
+    
 //    int correct_freq = freq * 
     
     PR1 = (uint32_t)SYS_FREQ/ ((uint32_t)(freq*( (uint32_t)128)) )-1;
     
     T1CONbits.TCKPS = 0b11; // 128
     
-    mT1SetIntPriority(3);  // you don't have to use ipl3, but make sure INT definition is the same as your choice here
-    mT1ClearIntFlag();     // make sure no int will be pending until 7200 counts from this point.  
-    mT1IntEnable(1);       // allow T2 int
+    mT1SetIntPriority(3);  
+    mT1ClearIntFlag();     
+    mT1IntEnable(1);       
 
     T1CONbits.ON = 1;
 }
-
-
-
-//void InitPWM()
-//{
-//    SetDCOC1PWM(3600);
-//    
-//    INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
-// 
-//    int samplerate = 100;
-// 
-//    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC1 module, T2 =source 
-//    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC2 module, T2 =source(you could do more OCx)
-//    OpenTimer2(T2_ON | T2_PS_1_1 | T2_SOURCE_INT,FPB/samplerate);         // init Timer2 mode and period reg (PR2)
-// 
-//    PR2 = FPB/samplerate-1;
-//
-//    mT2SetIntPriority(7);  // you don't have to use ipl7, but make sure INT definition is the same as your choice here
-//    mT2ClearIntFlag();     // make sure no int will be pending until 7200 counts from this point.  
-//    mT2IntEnable(1);       // allow T2 int
-//    
-//    
-//}
-
-
 
 
 
@@ -862,9 +839,14 @@ void ReadWriteUART2()
     
 }
 
-BOOL IsDataWaitingUART2()
+inline BOOL IsDataWaitingUART2()
 {
     return U2STAbits.URXDA != 0;
+}
+
+inline BOOL IsDataWaitingUART1()
+{
+    return U1STAbits.URXDA != 0;
 }
 
 BOOL ReadCommandFromUART2(int *command, int length)
@@ -1425,7 +1407,6 @@ void ReadSPI1Slave_test()
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN|  SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_CKE_REV | SPI_CONFIG_ON));
 //    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_MSSEN |SPI_CONFIG_SSEN |  SPI_CONFIG_MODE8 | SPI_CONFIG_CKE_REV | SPI_CONFIG_CKP_HIGH | SPI_CONFIG_DISSDO | SPI_CONFIG_ON));
-
 //    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
     SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSSEN | SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
 

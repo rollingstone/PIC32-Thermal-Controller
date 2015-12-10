@@ -146,7 +146,8 @@ void ShowFloatData(float *data, int length);
 
 void WaitReadUART2();
 
-BOOL IsDataWaitingUART2();
+inline BOOL IsDataWaitingUART1();
+inline BOOL IsDataWaitingUART2();
 
 BOOL ReadCommandFromUART1(int *command, int length);
 BOOL ReadCommandFromUART2(int *command, int length);
