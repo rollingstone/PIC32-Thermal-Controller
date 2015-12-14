@@ -4,7 +4,6 @@
 #include <plib.h>
 #include <xc.h>
 #include <time.h>
-//#include <proc/p32mz2048ech144.h>
 
 volatile int PWM1_Value = 10;
 volatile int PWM2_Value = 100;
@@ -33,70 +32,27 @@ BOOL IsDataReady = FALSE;
 
 void _mon_putc(char c)
 {
+    
+// if printf output is set to __XC_UART = 2, UART2
+
    U2TXREG = c;
    while (U2STAbits.UTXBF);
 
+// if printf output is set to __XC_UART = 1, UART1
+   
 //   U1TXREG = c;
 //   while (U1STAbits.UTXBF);
+
 }
 
 
 void InitSystem()
 {
-    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
-                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
-                                                              // This will double the PWM frequency.
-    
-
-    
-    mBMXDisableDRMWaitState();
-    CheKseg0CacheOn();
-//    mSy
-//    SYSTEMConfigPB()
+    SYSTEMConfigPerformance(SYS_FREQ); 
+    mOSCSetPBDIV(OSC_PB_DIV_1);     // Peripheral BUS clock is equal to SYS_FREQ, maximum possible
+                                        
     INTEnableSystemMultiVectoredInt();
-    
-    InitUART1();
-    InitUART2();
-   __XC_UART = 2;
- 
-    InitSPI2Slave();    
-    InitSPI1(32);
-    
-//    InitSPI1Slave();
- 
-}
-
-
-void InitSystem_Test()
-{
-    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
-                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
-                                                              // This will double the PWM frequency.
-    
-    INTEnableSystemMultiVectoredInt();
-
-//    BMXDRMSZ = 0x20000;
-//    BMXPFMSZ = 0x20000;
-
-    
-    /*    
-//    BMXCONbits.BMXARB = 2;
-    
-//    BMXDKPBA = 10 * 1024;
-            
-//    BMXDUDBA = 0x10000;
-//    BMXDUPBA = 0x10000;
-    
-    
-//    BMXCONbits.BMXWSDRM;
-    
-//    mBMXSetRAMKernProgOffset(0x80000000);
-//    mBMXSetFlashUserPartition(0x10000);
-*/
-            
-       
+     
     mBMXDisableDRMWaitState();
     CheKseg0CacheOn();
 
@@ -105,23 +61,67 @@ void InitSystem_Test()
     __XC_UART = 2;
  
   
-    InitSPI1(128);
+    InitSPI1(100000L);
     InitSPI2Slave();    
     
-    
-    
-
     printf("System speed %ld Hz\n", (long) SYS_FREQ);
     printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
-
+    
+//    SetupDebugGPIOPins();
 }
 
 
+//void InitSystem_Test()
+//{
+//    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
+//    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+//                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
+//                                                              // This will double the PWM frequency.
+//    
+//    INTEnableSystemMultiVectoredInt();
+//
+////    BMXDRMSZ = 0x20000;
+////    BMXPFMSZ = 0x20000;
+//
+//    
+//    /*    
+////    BMXCONbits.BMXARB = 2;
+//    
+////    BMXDKPBA = 10 * 1024;
+//            
+////    BMXDUDBA = 0x10000;
+////    BMXDUPBA = 0x10000;
+//    
+//    
+////    BMXCONbits.BMXWSDRM;
+//    
+////    mBMXSetRAMKernProgOffset(0x80000000);
+////    mBMXSetFlashUserPartition(0x10000);
+//*/
+//            
+//       
+//    mBMXDisableDRMWaitState();
+//    CheKseg0CacheOn();
+//
+//    InitUART1();
+//    InitUART2();    // print with UART2
+//    __XC_UART = 2;
+// 
+//  
+//    InitSPI1(128);
+//    InitSPI2Slave();    
+//    
+//    
+//    
+//
+//    printf("System speed %ld Hz\n", (long) SYS_FREQ);
+//    printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
+//
+//}
+//
+
 void SystemReset()
 {
-//    InitUART1();
-//    
-//    printf("Reseting system....\n");
     /* The following code illustrates a software Reset */
     // assume interrupts are disabled
     // assume the DMA controller is suspended
@@ -138,10 +138,64 @@ void SystemReset()
     unsigned int dummy;
     dummy = RSWRST;
     /* prevent any unwanted code execution until reset occurs*/
+
+    NOP();
+    NOP();
+    NOP();
+    NOP();
     
-    while(1);
+    while(1) NOP();
+    
 }
 
+
+void SetupDebugGPIOPins()
+{       
+//    uint32_t *data0;
+//    uint32_t data_len = 1024 * 64;
+//    
+//    uint32_t bmx_sz = BMXDRMSZ;
+//    uint32_t bmx_pfm_sz = BMXPFMSZ;
+//    
+////    data0 = (uint32_t *)AllocateMaxPossibleMemory(&data_len);
+//    
+//    
+//    printf("data_len %d\n", data_len);
+//
+//    printf("BMXDRMSZ %X\n", bmx_sz);
+//    printf("BMXPFMSZ %X\n", bmx_pfm_sz);
+//    
+//
+//
+//    printf("BMXDUDBA %X\n", BMXDUDBA);
+//    printf("BMXDUPBA %X\n", BMXDUPBA);
+//
+//
+//
+//    printf("BMXDKPBA %X\n", BMXDKPBA);
+    
+//    mPORTDSetPinsDigitalOut(BIT_0);
+//    mPORTBSetPinsDigitalOut(BIT_14);
+//    
+//    mPORTGSetPinsDigitalOut(BIT_9);
+//    mPORTGSetPinsDigitalOut(BIT_8);
+//    
+//    
+    mPORTASetPinsDigitalOut(BIT_0 | BIT_1);
+    mPORTAClearBits(BIT_0 | BIT_1);
+//    
+//    mPORTDSetPinsDigitalOut(BIT_2);
+//    
+//    mPORTGClearBits(BIT_8);
+//    mPORTGClearBits(BIT_9);
+    
+//    CNPDGbits.CNPDG8 = 0;
+//    CNPDGbits.CNPDG9 = 0;
+//    mPORTDClearBits(BIT_0);
+    
+    printf("Debug pin setup... Disable this in the production version....\n");
+
+}
 
 void RtccSetup()
 {
@@ -486,7 +540,6 @@ void InitPWM(int pwm_frequency, int duty_cycle)
 
     PPS_Unlock();
     RPD1Rbits.RPD1R = 0b1100; // OC1 // J11.20
-//    RPD2Rbits.RPD2R = 0b1011; // OC3
     PPS_Lock();
 
     OC1CON = 0x0006;
@@ -569,25 +622,42 @@ void InitPWM_v3(int pwm_frequency, int duty_cycle)
 }
 
 
-void InitTimer1(uint32_t freq)
+void InitTimer1(uint32_t freq) // freq in Hz
 {
-    int freq_val = ((int)SYS_FREQ/ (freq))-1;
-    
     T1CONbits.ON = 0;
     
-//    int correct_freq = freq * 
+    PR1 = (uint32_t)SYS_FREQ/ ((uint32_t)((2*freq)*( (uint32_t)128)) )-1;
     
-    PR1 = (uint32_t)SYS_FREQ/ ((uint32_t)(freq*( (uint32_t)128)) )-1;
+    T1CONbits.TCKPS = 0b11; // 256
     
-    T1CONbits.TCKPS = 0b11; // 128
-    
-    mT1SetIntPriority(3);  
+    mT1SetIntPriority(3);  // this timer is a low priority event
     mT1ClearIntFlag();     
     mT1IntEnable(1);       
 
     T1CONbits.ON = 1;
+
+    printf("Timer-1 set to %d Hz\n", freq);
 }
 
+void InitTimer4(uint32_t freq) // freq in Hz
+{
+    T4CONbits.ON = 0;
+    T4CONbits.T32 = 1;
+    
+    PR4 = (uint32_t)SYS_FREQ/ ((uint32_t)((1*freq)*( (uint32_t)512)) )-1;
+
+//    PR4 = 2; 
+    T4CONbits.TCKPS = 0b111; // 256
+    
+    
+    mT45SetIntPriority(3);  // this timer is a low priority event
+    mT45ClearIntFlag();     
+    mT45IntEnable(1);       
+
+    T4CONbits.ON = 1;
+
+    printf("Timer-4 set to %d Hz\n", freq);
+}
 
 
 void InitPWM_v2(int sample_rate)
@@ -650,20 +720,31 @@ void InitSPI2Slave()
 }
 
 
-void InitSPI1(int baud_rate)
+void InitSPI1(int freq_hz)
 {
+    int baud_rate = SPI_BRG_VAL(freq_hz);
+    
     MapSPI1MasterPins();
     
-    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN |   
+    SPI1CONbits.ON = 0;
+    
+    SpiChnConfigure(SPI_CHANNEL1, (SpiConfigFlags)(SPI_CONFIG_MSTEN | SPI_CONFIG_CKE_REV |  
                                                    SPI_CONFIG_MODE8 | SPI_CONFIG_ON
                                                    ));
     SpiChnSetBrg(SPI_CHANNEL1, baud_rate);
+    
+    
     SpiChnEnable(SPI_CHANNEL1, 1);
+    
+    SPI1CONbits.ON = 1;
+
 }
 
 
-void InitSPI2(int baud_rate)
+void InitSPI2(int freq_hz)
 {
+    int baud_rate = SPI_BRG_VAL(freq_hz);
+
 //    printf("Mapping SPI 2 Master Pins\n");
     MapSPI2MasterPins();
     
@@ -679,7 +760,7 @@ void SplitFloat2Ints(float fval, int *int_val, int *frac_val)
 {
     *int_val = (int) fval;
 
-    *frac_val = (int) ( (float)(fval - (float) *int_val)*1000);
+    *frac_val = (int) ( (float)(fval - (float) *int_val)*1000.0);
     
 //    if(fval >= 0)
 //    {
@@ -929,7 +1010,7 @@ BOOL ReadCommandFromUART1(int *command, int length)
         idx++;
         k = 0; while(k++ < 1000);
         
-        printf("Command received %d\n", val);
+//        printf("Command received %d\n", val);
     }
     
 //    U2STAbits.URXDA = 0;
@@ -1937,8 +2018,6 @@ void Test_SPI2Slave_DataTransferWith_SPI2Command()
         SPI2CONbits.ON = 1;
 
 //        WaitMS(1);
-        
-        
 //        TestUART2();
         
         printf("Waiting for UART command....,\n");
@@ -1963,21 +2042,6 @@ void Test_SPI2Slave_DataTransferWith_SPI2Command()
             
             if(command[0] == 99)
             {
-  
-                command[0] = 0;
-                command[1] = 0;
-                command[2] = 0;
-
-//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
-                
-                
-//                if(command[0] != 99)
-//                {
-//                    continue;
-//                }
-
-                
-//                printf("command received.... %d, %d, %d\n", (int)command[0], (int)command[1], (int)command[2] );
                 int i =0;
                 int count  = 0;
 
@@ -2041,11 +2105,9 @@ void Test_SPI2Slave_DataTransferWith_SPI2Command()
                     
                     test_buffer_length += 2;
 
-
-    //                vv = 0; while(vv++ < 100);
-
-        //            printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
-//                    printf('i == %d\n',i);
+//                  vv = 0; while(vv++ < 100);
+//                  printf("upper %d   lower %d\n", (int)test_buffer[i].v.upper, (int) test_buffer[i].v.lower);
+//                  printf('i == %d\n',i);
                     i++;
                 }
 
@@ -2054,9 +2116,7 @@ void Test_SPI2Slave_DataTransferWith_SPI2Command()
             }
         }
 
-//        SpiChnClose(SPI_CHANNEL2);
-//            mPORTAClearBits(BIT_0 | BIT_1);
-        
+        SpiChnClose(SPI_CHANNEL2);
         free(test_buffer);
 }
 
@@ -2069,9 +2129,6 @@ int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
     int val, dummy;
 
     printf("Sending %d bytes of data\n", data_length_in_bytes);
-
-    int wait_count = 0;
-    int do_stop_waiting = 0;
     
     for(i = 0; i < word_len; i++)
     {
@@ -2094,20 +2151,19 @@ int SendDataBySPI2Slave(UInt16Value *data, int data_length_in_bytes)
         }
     }
 
-    printf("***  %d bytes SENT  ***\n", i*2);
+    printf("***  %d bytes SENT  ***\n", (i << 1));
 
     while(SPI2STATbits.SPIRBF) // clean up read buffer
     {
         dummy = SPI2BUF;
     }
     
-    
-    // it seems to help... flushes all the states,... not sure why is it even necessary
+    // it seems to help...  not sure why is it even necessary
     SPI2CONbits.ON = 0;
-//    WaitMS(10);
+    SPI2CONbits.ON = 1;
     SPI2CONbits.ON = 1;
     
-    return i*2;
+    return (i << 1);
 }
 
 
@@ -3079,6 +3135,70 @@ void TestHyperADC_SPI2Slave_Read()
 }
 
 
+void TestDirectDataReadWrite()
+{
+
+  
+    char fstr[10000];
+    
+    float val = -1208.02092;
+    
+    ftoa(val, fstr, 4);
+    
+    int count = 0;
+    
+//    void * nv_address = (void *)0xBD010000;
+    float   nv_value = 10.0; 
+    
+    float fdata[100];
+    float rx_fdata[100];
+    
+    int ik = 0;
+    
+    while(ik < 100)
+    {
+        fdata[ik] = nv_value + ik + 0.01 * ik;
+        ik++;
+    }
+    
+    IntFloatValue *ifdata = (IntFloatValue *) fdata;
+    
+    SaveIntFloatDataToFlashMemory(ifdata, 100, 0);
+    LoadFloatDataFromFlashMemory(rx_fdata, 100, 0);
+    
+    ShowFloatData(fdata, 100);
+
+    
+    int ms = 0;
+    while(1)
+    {
+        ik = 0;
+        for(ik = 0; ik < 100; ik++)
+        {
+            int d0 = (int) fdata[ik];
+//            WriteUART1(d0);
+            
+//            WRITE_TO_UART1(d0);
+//            U2TXREG = d0;
+//            while (U2STAbits.UTXBF);
+            
+            printf("%d\n", d0);
+            WaitMS(1);
+//            ms = 0;
+//            while(ms++ < 10000);
+ 
+        }
+        
+//        ms = 0;
+//        while(ms++ < 10000);
+        
+        WaitMS(1);
+   
+    }
+
+    
+}
+
 
 
 void __ISR(_EXTERNAL_1_VECTOR, IPL7SRS) __INT1Handler()
@@ -3092,3 +3212,85 @@ void __ISR(_EXTERNAL_1_VECTOR, IPL7SRS) __INT1Handler()
     mINT1ClearIntFlag();
 
 }
+
+
+Queue * createQueue(int maxElements)
+{
+    Queue *Q;
+    Q = (Queue *)malloc(sizeof(Queue));
+    Q->elements = (float *)malloc(sizeof(float)*maxElements);
+    Q->size = 0;
+    Q->capacity = maxElements;
+    Q->front = 0;
+    Q->rear = -1;
+    return Q;
+}
+
+
+BOOL Dequeue(Queue *Q, int *front_val)
+{
+    /* If Queue size is zero then it is empty. So we cannot pop */
+    if(Q->size==0)
+    {
+        printf("Queue is Empty\n");
+        return FALSE;
+    }
+    /* Removing an element is equivalent to incrementing index of front by one */
+    else
+    {
+        *front_val = Q->elements[Q->front];
+        Q->size--;
+        Q->front++;
+        /* As we fill elements in circular fashion */
+        if(Q->front == Q->capacity)
+        {
+            Q->front = 0;
+        }
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+BOOL front(Queue *Q, float *front_val)
+{
+    if(Q->size==0)
+    {
+        printf("Queue is Empty\n");
+        return FALSE;
+    }
+
+    *front_val =  Q->elements[Q->front];
+    return TRUE;
+}
+
+
+BOOL Enqueue(Queue *Q,float element)
+{
+    /* If the Queue is full, we cannot push an element into it as there is no space for it.*/
+    if(Q->size == Q->capacity)
+    {
+        printf("Queue is Full\n");
+        return FALSE;
+    }
+    else
+    {
+        Q->size++;
+        Q->rear = Q->rear + 1;
+        /* As we fill the queue in circular fashion */
+        if(Q->rear == Q->capacity)
+        {
+                Q->rear = 0;
+        }
+        /* Insert the element in its rear side */ 
+        Q->elements[Q->rear] = element;
+        return TRUE;
+    }
+}
+
+
+void QueueToList(Queue *Q, float *list, int lest_len)
+{
+    
+}
+

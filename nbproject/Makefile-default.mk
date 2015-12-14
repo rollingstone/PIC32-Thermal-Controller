@@ -45,17 +45,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=main.cpp TemperatureController.c PeripheralSettingsAndMacros.c PID.c
+SOURCEFILES_QUOTED_IF_SPACED=main.cpp TemperatureController.c PeripheralSettingsAndMacros.c PID.c TestPeripherals.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/TemperatureController.o ${OBJECTDIR}/PeripheralSettingsAndMacros.o ${OBJECTDIR}/PID.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/TemperatureController.o.d ${OBJECTDIR}/PeripheralSettingsAndMacros.o.d ${OBJECTDIR}/PID.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/main.o ${OBJECTDIR}/TemperatureController.o ${OBJECTDIR}/PeripheralSettingsAndMacros.o ${OBJECTDIR}/PID.o ${OBJECTDIR}/TestPeripherals.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/main.o.d ${OBJECTDIR}/TemperatureController.o.d ${OBJECTDIR}/PeripheralSettingsAndMacros.o.d ${OBJECTDIR}/PID.o.d ${OBJECTDIR}/TestPeripherals.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/TemperatureController.o ${OBJECTDIR}/PeripheralSettingsAndMacros.o ${OBJECTDIR}/PID.o
+OBJECTFILES=${OBJECTDIR}/main.o ${OBJECTDIR}/TemperatureController.o ${OBJECTDIR}/PeripheralSettingsAndMacros.o ${OBJECTDIR}/PID.o ${OBJECTDIR}/TestPeripherals.o
 
 # Source Files
-SOURCEFILES=main.cpp TemperatureController.c PeripheralSettingsAndMacros.c PID.c
+SOURCEFILES=main.cpp TemperatureController.c PeripheralSettingsAndMacros.c PID.c TestPeripherals.c
 
 
 CFLAGS=
@@ -112,6 +112,12 @@ ${OBJECTDIR}/PID.o: PID.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/PID.o 
 	@${FIXDEPS} "${OBJECTDIR}/PID.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CPPC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/PID.o.d" -o ${OBJECTDIR}/PID.o PID.c     
 	
+${OBJECTDIR}/TestPeripherals.o: TestPeripherals.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/TestPeripherals.o.d 
+	@${RM} ${OBJECTDIR}/TestPeripherals.o 
+	@${FIXDEPS} "${OBJECTDIR}/TestPeripherals.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CPPC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1 -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/TestPeripherals.o.d" -o ${OBJECTDIR}/TestPeripherals.o TestPeripherals.c     
+	
 else
 ${OBJECTDIR}/TemperatureController.o: TemperatureController.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
@@ -130,6 +136,12 @@ ${OBJECTDIR}/PID.o: PID.c  nbproject/Makefile-${CND_CONF}.mk
 	@${RM} ${OBJECTDIR}/PID.o.d 
 	@${RM} ${OBJECTDIR}/PID.o 
 	@${FIXDEPS} "${OBJECTDIR}/PID.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CPPC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/PID.o.d" -o ${OBJECTDIR}/PID.o PID.c     
+	
+${OBJECTDIR}/TestPeripherals.o: TestPeripherals.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/TestPeripherals.o.d 
+	@${RM} ${OBJECTDIR}/TestPeripherals.o 
+	@${FIXDEPS} "${OBJECTDIR}/TestPeripherals.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CPPC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -MMD -MF "${OBJECTDIR}/TestPeripherals.o.d" -o ${OBJECTDIR}/TestPeripherals.o TestPeripherals.c     
 	
 endif
 

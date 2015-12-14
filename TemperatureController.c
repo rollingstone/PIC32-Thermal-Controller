@@ -4,7 +4,8 @@
 #include "TemperatureController.h"
 
 
-//#define     FPB 1
+#define VAR_MAX      0.001
+#define MD_MAX      0.1
 
 
 int PWMValue1;// = 3600; // 7200 max
@@ -19,11 +20,17 @@ uint16_t    timer_count = 0;
 #define     THERMO_SPI_CHANNEL  SPI_CHANNEL1
 
 
+int TempBufferMAXLength = 50;
+float TemperatureList[50];
+int TemperatureListLength = 40;
+int CurrentTemperatureIDX = 0;
+BOOL IsCircular = FALSE;
+
+
 void TemperatureSystemInit()
 {
     CS_INIT();
     DPDT_INIT();
-    
 }
 
 void MapAllPins()
@@ -51,15 +58,7 @@ float PmodTC1_Temperature()
     int32_t  vi = (int32_t)value / (int32_t)(1 << 18);
        
     float temp = ((float) vi) * 0.25;
-    
-//    printf("Temp %d \n", (int) (temp*100.0));
-
-//    sprintf(sbuf, "**************************** vi   %d   value %d  temp  %d\n", vi, value, (int)temp);
-//    printf( "**************************** vi   %d   value %d  temp  %d\n", vi, value, (int)temp);
-//    printf("**************************** vi   %d   value %d  temp  %f\n", vi, value, 3.12);
-    
     return temp;
-//    return (float)  value * 0.3125;
 }
 
 
@@ -93,9 +92,9 @@ float LM95071_Temperature()
 float LSD_Temperature(){
     float temp;
     
-    LSD_CS(CS_LOW);
+    LSD_CS_EX(CS_LOW);
     temp =  LM95071_Temperature();
-    LSD_CS(CS_HIGH);
+    LSD_CS_EX(CS_HIGH);
     
     return temp;
 }
@@ -106,15 +105,15 @@ float Peltier_Temperature(BOOL isTop){
 
     if(isTop)
     {
-        PELTIER_TOP_CS(CS_LOW);
+        PELTIER_TOP_CS_EX(CS_LOW);
         temp =  PmodTC1_Temperature();
-        PELTIER_TOP_CS(CS_HIGH);
+        PELTIER_TOP_CS_EX(CS_HIGH);
     }
     else
     {
-        PELTIER_BOTTOM_CS(CS_LOW);
+        PELTIER_BOTTOM_CS_EX(CS_LOW);
         temp =  PmodTC1_Temperature();
-        PELTIER_BOTTOM_CS(CS_HIGH);
+        PELTIER_BOTTOM_CS_EX(CS_HIGH);
     }
     
     return temp;
@@ -123,9 +122,9 @@ float Peltier_Temperature(BOOL isTop){
 float ADisco_Temperature(){
     float temp;
 
-    ADISCO_CS(CS_LOW);
+    ADISCO_CS_EX(CS_LOW);
     temp =  PmodTC1_Temperature();
-    ADISCO_CS(CS_HIGH);
+    ADISCO_CS_EX(CS_HIGH);
     
     return temp;
 }
@@ -133,9 +132,9 @@ float ADisco_Temperature(){
 float FacePlate_Temperature(){
     float temp;
 
-    FACE_PLATE_CS(CS_LOW);
+    FACE_PLATE_CS_EX(CS_LOW);
     temp =  PmodTC1_Temperature();
-    FACE_PLATE_CS(CS_HIGH);
+    FACE_PLATE_CS_EX(CS_HIGH);
     
     return temp;
 }
@@ -211,9 +210,10 @@ void ChangeTemperature(int pid, float error)
     else if(pid < 0)
     {
         DPDT_2(1); // cool down
+//        printf("Cooling DOWN....\n");
     }
     
-    SetPWMDutyCycle(1, (int)abs(pid));
+    SetPWMDutyCycle(1, (int)ABS_VALUE(pid));
 }
 
 
@@ -241,37 +241,14 @@ void AdjustTemperature(float target_temp)
 
     float sn = error_value < 0 ? -1:1;
 
-//    
-//    InitializePID(float Kp_val, float Ki_val, float Kd_val, float Derivative_val, float Target_temp)
-//
-
     UInt16Value     *data_buffer;
-    UInt16Value     *data_buffer2;
     uint32_t        data_buffer_length = 20*1000; // bytes
-    uint32_t        data_buffer2_length = 20*1000; // bytes
     
     uint32_t    current_idx = 0;
 
     BOOL        is_allocated = FALSE;
     
-//    while(data_buffer_length > 100)
-//    {
-//        data_buffer = (UInt16Value *) malloc((size_t)data_buffer_length); 
-//
-//        if(data_buffer == NULL)
-//        {
-//            data_buffer_length -= 2;
-//        }
-//        else
-//        {
-//            printf("data_short memory allocated with size %d KB (%d bytes)\n", data_buffer_length/1024, data_buffer_length);
-//            is_allocated = TRUE;
-//            break;
-//        }
-//    }
-    
     data_buffer = (UInt16Value *) AllocateMaxPossibleMemory(&data_buffer_length);
-    data_buffer2 = NULL; // (UInt16Value *) AllocateMaxPossibleMemory(&data_buffer2_length);
             
     WaitMS(100);
     
@@ -281,19 +258,7 @@ void AdjustTemperature(float target_temp)
         return;
     }
     
-    
-//    SpiChnEnable(SPI_CHANNEL2, 0);
-//    SpiChnConfigure(SPI_CHANNEL2, (SpiConfigFlags)(SPI_CONFIG_CKE_REV | SPI_CONFIG_MODE8 | SPI_CONFIG_ON));
-//    SpiChnEnable(SPI_CHANNEL2, 1);
-//
-//    SPI2CONbits.ON = 1;
 
-    
-//    if(data_buffer2 == NULL)
-//    {
-//        printf("ERROR: Cannot allocate memory for data_short (%d)\n", (int) data_buffer_length);
-//        return;
-//    }
     InitializePID(40.0, 0, 0.1, 0, target_temp);
     SetTargetTemperature(target_temp);
  
@@ -322,7 +287,10 @@ void AdjustTemperature(float target_temp)
 
 //    InitSPI1(4);
     
-    DPDT_2(1);
+    DPDT_INIT();
+    CS_INIT();
+    
+//    DPDT_2(1);
     
     int command[10];
     int command_length = 3;
@@ -333,9 +301,14 @@ void AdjustTemperature(float target_temp)
     int temperature_buffer[1000];
     int temperature_buffer_length = 1000;
     int temperature_idx = 0;
-    
-    
     int max_thermometer = 5;
+    
+    ClearTemperatureList();
+    
+    
+    float sdev = 9999999;
+    float mdev = 9999999;
+
     
     while(1)
     {
@@ -345,11 +318,11 @@ void AdjustTemperature(float target_temp)
             int k;
 
             k =  0;
-            while(k < command_length)
-            {
-                printf(" commands %d\n", command[k]);
-                k++;
-            }
+//            while(k < command_length)
+//            {
+//                printf(" commands %d\n", command[k]);
+//                k++;
+//            }
             
             if(command[0] == 99)
             {
@@ -367,7 +340,7 @@ void AdjustTemperature(float target_temp)
                 current_idx = 0;
 //                SPI1CONbits.ON = 1;
                 
-                printf("Data sent.... (%d)\n", rx_len);
+                printf("Data sent.... (%d) by SPI2 Slave\n", rx_len);
 
             }
             else if(command[0] == 1) // LSD
@@ -376,6 +349,8 @@ void AdjustTemperature(float target_temp)
                 {
                     target_temp = (float) command[2];   // Value as Integer
                     SetTargetTemperature(target_temp);
+                    ClearTemperatureList();
+//                    InitializePID(40.0, 0, 0.1, 0, target_temp);
 
                     printf("New target temperature set to %d\n", (int) target_temp);
                 }
@@ -391,7 +366,7 @@ void AdjustTemperature(float target_temp)
             {
                 int uidx = 0;
                 
-                printf("**************** Read command received.....Sending %d bytes\n", current_idx*10);
+                printf("**************** Read command received.....Sending %d bytes via UART1\n", current_idx*10);
                 
 //                WRITE_TO_UART2(0xAA);
                 
@@ -422,33 +397,26 @@ void AdjustTemperature(float target_temp)
 
                     WRITE_TO_UART1(data_buffer[uidx+4].v.upper);
                     WRITE_TO_UART1(data_buffer[uidx+4].v.lower);
-                    
-                    
-//                    WRITE_TO_UART2(data_buffer[uidx]._value*0);
-//                    WRITE_TO_UART2(data_buffer[uidx]._value);
-//                  
-//                    WRITE_TO_UART2(data_buffer[uidx+1].v.upper*0);
-//                    WRITE_TO_UART2(data_buffer[uidx+1]._value);
-//
-//                    WRITE_TO_UART2(data_buffer[uidx+2].v.upper*0);
-//                    WRITE_TO_UART2(data_buffer[uidx+2]._value);
-//
-//                    WRITE_TO_UART2(data_buffer[uidx+3].v.upper*0);
-//                    WRITE_TO_UART2(data_buffer[uidx+3]._value);
-//
-//                    WRITE_TO_UART2(data_buffer[uidx+4].v.upper*0);
-//                    WRITE_TO_UART2(data_buffer[uidx+4]._value);
                 }
                 
-//                WRITE_TO_UART2(1);
-//                WRITE_TO_UART2(2);
-//                WRITE_TO_UART2(3);
-//                WRITE_TO_UART2(4);
-                
                 current_idx = 0;
-//                mPORTAClearBits(BIT_0);
-
-                
+            }
+            else if(command[0] == 111 && command[1] == 0 && command[2] == 111) // is target temp reached
+            {
+                if(sdev < VAR_MAX && ABS_VALUE(mdev) < MD_MAX)
+                {
+                    WRITE_TO_UART1(111);
+                    WRITE_TO_UART1(111);
+                }
+                else
+                {
+                    UInt16Value v16;
+                    v16._value = (uint16_t) (current_temp*100.0);
+                    
+                    WRITE_TO_UART1(v16.v.upper);
+                    WRITE_TO_UART1(v16.v.lower);
+                    
+                }
             }
             
             command[0] = 0;
@@ -468,6 +436,9 @@ void AdjustTemperature(float target_temp)
 //            
 
             current_temp = LSD_Temperature();
+            AddTemperatureToList(current_temp);
+            
+            Calculate_SD_And_MD(target_temp, &sdev, &mdev);
 
 //                k = 0;while(k++< 100);
             error_val = (target_temp - current_temp);
@@ -487,7 +458,7 @@ void AdjustTemperature(float target_temp)
 
             int new_pid = (int) UpdatePID(current_temp); 
 
-            if(current_temp > 70.0)
+            if(ABS_VALUE(current_temp) > 70.0)
             {
                 SetPWMDutyCycle(1, 0);
             }
@@ -507,12 +478,12 @@ void AdjustTemperature(float target_temp)
             int e = current_temp > target_temp? -( 1000-frac_val ): (1000-frac_val);  
 
 //              printf("PID value == %-3d,\terror*100 == %-5d,\tTemperature == %-3d\n", (int)new_pid, (int)(error_val * 100.0), (int)current_temp);
-            printf("Target %d\t,PID value == %3d,\tTemperature == %-03d + (%d/1000) \t(Error = %-03d/1000)",
+            printf("Target %d\t,PID value == %3d,\tTemperature == %-03d + (%d/1000)\t",
                     (int) target_temp,
                     (int) new_pid, 
                     int_val, 
-                    frac_val, 
-                    e);
+                    frac_val 
+                    );
 
             float adisco_temp = ADisco_Temperature();
             float peltier_top = Peltier_Temperature(1);
@@ -652,8 +623,24 @@ void TestUART2DataSendToRaspberryPi()
     }
 }
 
+void __ISR( _TIMER_1_VECTOR, IPL3AUTO) __T1Interrupt(void)
+{
+    static uint32_t     t1_counter = 0;
+    
+    if(++t1_counter >= TIMER_1_SCALE_DOWN_FACTOR)
+    {
+        t1_counter = 0;
+        DoAdjustTemperature = 1;
+        timer_count++;
+//        mPORTAToggleBits(BIT_0 | BIT_1);
+    }
+   
+//    mPORTBToggleBits(BIT_14);
+    mT1ClearIntFlag();         // clear this interrupt .
+} 
 
-void __ISR( _TIMER_1_VECTOR, IPL3AUTO) T1Interrupt(void)
+
+void __ISR( _TIMER_45_VECTOR, IPL3AUTO) __T4Interrupt(void)
 {
     if(DoAdjustTemperature == 0)
         DoAdjustTemperature = 1;
@@ -661,9 +648,10 @@ void __ISR( _TIMER_1_VECTOR, IPL3AUTO) T1Interrupt(void)
     timer_count++;
     
 //    mPORTBToggleBits(BIT_14);
-    
+ 
+    mPORTAToggleBits(BIT_0 | BIT_1);
 //    printf("******** Interrupt T1 is called************\n");
-    mT1ClearIntFlag();         // clear this interrupt .
+    mT4ClearIntFlag();         // clear this interrupt .
 } 
 
 
@@ -738,26 +726,89 @@ void SPI1_TempMeasurement_LM_Thermo_Test()
 {
     float temp = 0;
         // SS1 ==> RB2
-    mPORTBSetPinsDigitalOut(BIT_2);
-    mPORTBSetBits(BIT_2); 
+//    mPORTBSetPinsDigitalOut(BIT_2);
+//    mPORTBSetBits(BIT_2); 
     int kcount = 0;
     LSD_CS(CS_HIGH);
     
     while(1)
     {
-       mPORTBClearBits(BIT_2); 
-       LSD_CS(CS_LOW);
+//       mPORTBClearBits(BIT_2); 
+       LSD_CS_EX(CS_LOW);
 
        temp = LM95071_Temperature();
        
        int frac_temp =(int) ( ((float) temp - ((float) (int) temp) ) * 1000.0 );
        
        LSD_CS(CS_HIGH);
-       mPORTBSetBits(BIT_2); 
+//       mPORTBSetBits(BIT_2); 
        
        
        printf("%d:\tTemperature == %d + (%d/1000)\n", kcount++, (int) temp, frac_temp);
-       WaitMS(1000);
-       break;
+       WaitMS(100);
+//       break;
     }
 }
+
+
+void Calculate_SD_And_MD(float target_temp, float *sd, float *md)
+{
+    int   i = 0, n = 0;    
+    float mu1 = 0;
+    float mu2 = 0;
+
+    float sigma2 = 0;
+    float mean_dev  = 0;
+    
+    float mu = target_temp;
+
+    for(i = 0; i < (TempBufferMAXLength); i++)
+    {
+        float temp = TemperatureList[i];
+        if((temp) > -999.0)
+        {
+            float mdev = (temp - mu);
+            
+            mean_dev += mdev;
+            sigma2 += mdev * mdev;
+            n++;
+        }
+    }
+    
+    mean_dev /= (float) n;
+    sigma2 /= (float) n;
+    
+    *sd = sigma2;
+    *md = mean_dev;
+    
+    printf("VAR = %d/10000, MD = %d/10000\n", (int) (sigma2*10000.0), (int) (*md*10000.0));
+    
+}
+
+
+void AddTemperatureToList(float temp_value)
+{
+
+    TemperatureList[CurrentTemperatureIDX] = temp_value;
+    CurrentTemperatureIDX++;
+    CurrentTemperatureIDX %= TemperatureListLength;
+}
+
+void ClearTemperatureList()
+{
+    int i = 0;
+    while(i < TempBufferMAXLength)
+    {
+        TemperatureList[i] = -999.0;
+        i++;
+    }
+    
+    TemperatureList[0] = 10.0;
+    
+    CurrentTemperatureIDX = 0;
+    IsCircular = FALSE;
+}
+
+
+
+

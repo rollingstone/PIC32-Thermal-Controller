@@ -36,6 +36,17 @@ typedef union __Int16Value_tag{
 } UInt16Value;
 
 
+typedef struct Queue
+{
+    int capacity;
+    int size;
+    int front;
+    int rear;
+    float *elements;
+}Queue;
+
+
+
 #define CPU_CLOCK               (80*1000000L)
 //#define CPU_CLOCK               (96L*1000000L)
 
@@ -43,12 +54,12 @@ typedef union __Int16Value_tag{
 #define	GetPeripheralClock()		(SYS_FREQ/(1 << OSCCONbits.PBDIV))
 #define	GetInstructionClock()		(SYS_FREQ)
 
-#define MS_LOOP                 ((uint32_t)( (((double)80000 )) / ((double)800000000L / (double)SYS_FREQ)))
-
-
 #define PBUS_CLOCK                  GetPeripheralClock()
 
-#define     DPDT_PIN        
+
+#define MS_LOOP                 ((uint32_t)( (((double)80000 )) / ((double)800000000L / (double)SYS_FREQ)))
+
+//#define     DPDT_PIN        
 #define     BAUD_RATE_SPI   500000  // 500 kHz
 
 
@@ -78,7 +89,7 @@ typedef union __Int16Value_tag{
 #define     BASE_DATA_ADDRESS_NVM   0xBD008000
 #define     MAX_DATA_SIZE_NVM       (0xFFFF >> 1)    
 
-#define     ABS_VALUE(val)          ( (val) < 0? (val):-(val) )
+#define     ABS_VALUE(val)          ( (val) < 0? (-val):(val) )
 
 #define     NOP()                   asm("nop")
 
@@ -87,16 +98,27 @@ typedef union __Int16Value_tag{
 
 #define     SPI2_CLEAR_READ_BUF(dummy)                        {while(SPI2STATbits.SPIRBF) dummy = SPI2BUF;}
 
-    
+#define     SYSTEM_SOFT_RESET()         { SoftReset(); NOP(); NOP(); NOP(); NOP(); while(1){NOP();}; }
+
+
+#define     SPI_BRG_VAL(spi_clk)        ( (GetPeripheralClock() / ((spi_clk) << 1)) -1 )
+
 // Note that 612Hz (PR2=0xffff) is the lowest pwm frequency with our configuration
 // : To get lower, use a timer prescaler or use the 32-bit timer mode
 #define         PWM_FREQ    16000
 #define         DUTY_CYCLE  10    
-    
+
+#define     TIMER_1_SCALE_DOWN_FACTOR    1
+
+
+
 void InitSystem();
-void InitSystem_Test();
+//void InitSystem_Test();
 
 void SystemReset();
+
+void SetupDebugGPIOPins();
+
 
 void InitPWM(int sample_rate, int duty_cycle);
 void InitPWM_v3(int pwm_frequency, int duty_cycle);
@@ -104,13 +126,14 @@ void InitPWM_v3(int pwm_frequency, int duty_cycle);
 int  SetPWMDutyCycle(int pwm_number, int duty_cycle);
 
 void InitTimer1(uint32_t freq);
+void InitTimer4(uint32_t freq);
 
 void InitSPI1Slave();
 void InitSPI2Slave();
 
 
-void InitSPI1(int baud_rate);
-void InitSPI2(int baud_rate);
+void InitSPI1(int freq_hz);
+void InitSPI2(int freq_hz);
 
 
 int  InitUART1();
@@ -195,6 +218,12 @@ void TestSPI1Master_To_SPI2SlaveData_Transfer(uint32_t brate);
 void InitExtINTs();
 void TestHyperADC_SPI2Slave_Read();
 
+
+
+Queue * createQueue(int maxElements);
+BOOL Dequeue(Queue *Q, int *front_val);
+BOOL front(Queue *Q, float *front_val);
+BOOL Enqueue(Queue *Q, float element);
 
 #ifdef	__cplusplus
 }

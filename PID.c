@@ -1,54 +1,3 @@
-//
-//
-//class PID:
-//    """
-//    Classe qui gère la boucle de rétroaction du rapport cyclique du peltier sur la température IMS µLSD avec un ago de PID modifié: 
-//    pwm_peltier = former_pwm_peltier + P*(set_temperature_lsd - measured_temperature_lsd) + D*(former_measured_temperature_lsd - measured_temperature_lsd)
-//       
-//    """
-//
-//    def __init__(self, P=2.0, D=0.0, Derivator=0, PID_min=0, PID_max=99):
-//
-//        self.Kp=P
-//        #self.Ki=I
-//        self.Kd=D
-//        self.Derivator=Derivator
-//        self.PID_min=PID_min
-//        self.PID_max=PID_max
-//
-//        self.set_point=0.0
-//        self.error=0.0
-//        #self.list_Error = np.zeros(Integrator_nb_values)
-//        
-//    def update(self,current_value,former_PID):
-//        """
-//        Calculate PID output value for given reference input and feedback
-//        """
-//
-//        self.error = self.set_point - current_value
-//
-//        self.P_value = self.Kp * self.error
-//        self.D_value = self.Kd * ( self.error - self.Derivator)
-//        self.Derivator = self.error
-//
-//
-//        PID = former_PID + self.P_value + self.D_value
-//        #print 'P_value ', self.P_value, ' D_value ', self.D_value
-//        if PID > self.PID_max:
-//            PID = self.PID_max
-//        elif PID < self.PID_min:
-//            PID = self.PID_min
-//    
-//        return PID
-// 
-//    
-//    def setPoint(self,set_point):
-//        """
-//        Initilize the setpoint of PID
-//        """
-//        self.set_point = set_point
-//        #self.Integrator=0
-//        self.Derivator=0
 
 
 #include <time.h>
@@ -94,6 +43,7 @@ void InitializePID(float Kp_val, float Ki_val, float Kd_val, float Derivative_va
     
     CurrentPIDValue = 0;
     LastPIDValue = 0;
+//    pid = 0;
     
     
 //    if()
@@ -116,22 +66,7 @@ float UpdatePID(float current_temperature)
     
     Error = TargetTemperature - current_temperature;
 
-//    Error *= Error;
-//    if(Error < 0)
-//    {
-//        Error = -Error;
-//        cool_factor = 2;//3.7;
-//    }
-//    else
-//    {
-//        cool_factor = 1.08;
-//    }
-//    if(Error < 0.2)
-//        return LastPIDValue;
-    
-//    float pid = LastPIDValue + cool_factor * Kp/500.0 * Error + 1.0 * (Error - Derivative);
-
-    pid = LastPIDValue + (float)0.01 * Error + 1.0 * (Error - Derivative);
+    pid = LastPIDValue + (float)0.2 * Error + 10.0 * (Error - Derivative);
 //
 //    if( ABS_VALUE(Error) < 1)
 //      pid = LastPIDValue + 0.1 * Error + 1.0 * (Error - Derivative);

@@ -9,16 +9,22 @@
 #define	TEMPERATURECONTROLLER_H
 
 #define _SUPPRESS_PLIB_WARNING
+
+
 //#define _DISABLE_OPENADC10_CONFIGPORT_WARNING
 
 
 #include <cstdlib>
 #include <plib.h>
 #include <stdint.h>
+#include <math.h>
 #include <xc.h>
 #include "PeripheralSettingsAndMacros.h"
 #include "PID.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define  CS_LOW                 0
 #define  CS_HIGH                1
@@ -30,7 +36,15 @@
 #define  FACE_PLATE_CS(val)     {LATEbits.LATE6 = val;}
 
 
+#define LSD_CS_EX(val)              {LSD_CS(val); PELTIER_TOP_CS(CS_HIGH); PELTIER_BOTTOM_CS(CS_HIGH); ADISCO_CS(CS_HIGH); FACE_PLATE_CS(CS_HIGH);}
+#define PELTIER_TOP_CS_EX(val)      {LSD_CS(CS_HIGH); PELTIER_TOP_CS(val); PELTIER_BOTTOM_CS(CS_HIGH); ADISCO_CS(CS_HIGH); FACE_PLATE_CS(CS_HIGH);}
+#define PELTIER_BOTTOM_CS_EX(val)  {LSD_CS(CS_HIGH); PELTIER_TOP_CS(CS_HIGH); PELTIER_BOTTOM_CS(val); ADISCO_CS(CS_HIGH); FACE_PLATE_CS(CS_HIGH);}
+#define ADISCO_CS_EX(val)           {LSD_CS(CS_HIGH); PELTIER_TOP_CS(CS_HIGH); PELTIER_BOTTOM_CS(CS_HIGH); ADISCO_CS(val); FACE_PLATE_CS(CS_HIGH);}
+#define FACE_PLATE_CS_EX(val)       {LSD_CS(CS_HIGH); PELTIER_TOP_CS(CS_HIGH); PELTIER_BOTTOM_CS(CS_HIGH); ADISCO_CS(CS_HIGH); FACE_PLATE_CS(val);}
+                    
+    
 #define  DPDT_1(val)             {LATAbits.LATA6 = val;}
+//#define  DPDT_2(val)             { (val) > 0 ? mPORTASetBits(BIT_7): mPORTAClearBits(BIT_7); } //{LATAbits.LATA7 = val;}
 #define  DPDT_2(val)             {LATAbits.LATA7 = val;}
 
 
@@ -57,10 +71,6 @@
 #define INT_PART(val)           ((int)val)
 #define FRAC_PART(val, mult)    ((int) ((float)(val - INT_PART(val))* (float)mult))
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
     
 void AdjustTemperature(float target_temp);
 float LSD_Temperature();
@@ -77,7 +87,9 @@ void SPI1_TempMeasurement_LM_Thermo_Test();
 void TemperatureSystemInit();
 
 
-
+void AddTemperatureToList(float temp_value);
+void ClearTemperatureList();
+void Calculate_SD_And_MD(float target_temp, float *sd, float *md);
 
 #ifdef __cplusplus
 }
