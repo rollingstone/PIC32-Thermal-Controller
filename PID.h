@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-void InitializePID(float Kp_val, float Ki_val, float Kd_val, float Derivative_val, float Target_temp);
+void InitializePID(float Kp_val, float Kd_val, float Target_temp);
 float UpdatePID(float current_temperature);
 inline void SetTargetTemperature(float target_temp);
 inline float GetLastPID();

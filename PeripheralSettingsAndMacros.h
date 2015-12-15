@@ -126,6 +126,8 @@ void InitPWM_v3(int pwm_frequency, int duty_cycle);
 int  SetPWMDutyCycle(int pwm_number, int duty_cycle);
 
 void InitTimer1(uint32_t freq);
+uint32_t GetTimer1_Freqency();
+
 void InitTimer4(uint32_t freq);
 
 void InitSPI1Slave();

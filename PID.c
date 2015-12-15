@@ -18,36 +18,26 @@ float TargetTemperature = 25; // C
 float Error = 0;
 float LastError = 0;
 
-float CurrentPIDValue;
 float LastPIDValue;
 
 
 float PreviousError = 0;
-
 time_t  LastTime;
-
 int     HC_Offset = 0;
 
 
-void InitializePID(float Kp_val, float Ki_val, float Kd_val, float Derivative_val, float Target_temp)
+void InitializePID(float Kp_val, float Kd_val, float Target_temp)
 {
     Kp = Kp_val;
-    Ki = Ki_val;
     Kd = Kd_val;
     
-    Derivative = Derivative_val;
+    Derivative = 0;
     Integral = 0;
     TargetTemperature = Target_temp;
     
     Error = 0;
-    
-    CurrentPIDValue = 0;
+
     LastPIDValue = 0;
-//    pid = 0;
-    
-    
-//    if()
-    
 }
 
 void SetNewTargetTemperature(float target_temp)
@@ -66,23 +56,7 @@ float UpdatePID(float current_temperature)
     
     Error = TargetTemperature - current_temperature;
 
-    pid = LastPIDValue + (float)0.2 * Error + 10.0 * (Error - Derivative);
-//
-//    if( ABS_VALUE(Error) < 1)
-//      pid = LastPIDValue + 0.1 * Error + 1.0 * (Error - Derivative);
-//    else
-//    {
-//        if(Error < 0)
-//        {
-//            pid = 3 * Error;
-//        }
-//        else
-//        {
-//            pid = 1 * Error;
-//        }
-//    }
-
-//    float pid = LastPIDValue + Kp/500.0 * Error; // + 0.1 * (Error - Derivative);
+    pid = LastPIDValue + (float)Kp * Error + Kd * (Error - Derivative);
     
     Derivative = Error;
     
@@ -95,11 +69,7 @@ float UpdatePID(float current_temperature)
         pid = PID_min;//PID_min;
     }
     
-    CurrentPIDValue = pid;
     LastPIDValue = pid;
-    
-//    printf("PID = %d\n", (int)pid);
-//    WaitMS(1);
     
     return pid;
 }
@@ -113,11 +83,6 @@ inline void SetTargetTemperature(float target_temp)
 inline float GetLastPID()
 {
     return LastPIDValue;
-}
-
-inline float GetCurrentPID()
-{
-    return CurrentPIDValue;
 }
 
 float IteratePID(float current_temperature)

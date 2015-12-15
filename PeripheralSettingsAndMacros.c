@@ -29,6 +29,8 @@ int32_t     HyperADC_RX32 = 0;
 
 BOOL IsDataReady = FALSE;
 
+uint32_t    CurrentFrequency_T1 = 0;
+
 
 void _mon_putc(char c)
 {
@@ -51,7 +53,7 @@ void InitSystem()
     SYSTEMConfigPerformance(SYS_FREQ); 
     mOSCSetPBDIV(OSC_PB_DIV_1);     // Peripheral BUS clock is equal to SYS_FREQ, maximum possible
                                         
-    INTEnableSystemMultiVectoredInt();
+    INTEnableSystemMultiVectoredInt(); // Must
      
     mBMXDisableDRMWaitState();
     CheKseg0CacheOn();
@@ -548,30 +550,14 @@ void InitPWM(int pwm_frequency, int duty_cycle)
     
     OC1RS = (PR2+1) * ((float)duty_cycle /100.0);
     
-//    OC2RS = ((PR2+1) *  PWM2_DC) /(int)100;
-//    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC1 module, T2 =source 
-//    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC2 module, T2 =source(you could do more OCx)
-//    OpenTimer2(T2_ON | T2_PS_1_256 | T2_SOURCE_INT, 0xFFFF);         // init Timer2 mode and period reg (PR2)
-
     T2CONbits.TCKPS = 0b101;
     
-    mT2SetIntPriority(7);  // you don't have to use ipl7, but make sure INT definition is the same as your choice here
-    mT2ClearIntFlag();     // make sure no int will be pending until 7200 counts from this point.  
-    mT2IntEnable(1);       // allow T2 int
+    mT2SetIntPriority(7);  
+    mT2ClearIntFlag();     
+    mT2IntEnable(1);       
 
     T2CONbits.ON = 1;
     OC1CONbits.ON = 1;
-    
-//    printf("PR2 == %d", PR2, OC1RS, OC2RS);
-
-//    SetDCOC1PWM(PWM1_Value);
-//    SetDCOC2PWM(PWM2_Value);
-
-//T2_32BIT_MODE_ON
-
-//    mT2SetIntPriority(7);  // you don't have to use ipl7, but make sure INT definition is the same as your choice here
-//    mT2ClearIntFlag();     // make sure no int will be pending until 7200 counts from this point.  
-//    mT2IntEnable(1);       // allow T2 int
 }
 
 
@@ -624,6 +610,8 @@ void InitPWM_v3(int pwm_frequency, int duty_cycle)
 
 void InitTimer1(uint32_t freq) // freq in Hz
 {
+    CurrentFrequency_T1 = freq;
+    
     T1CONbits.ON = 0;
     
     PR1 = (uint32_t)SYS_FREQ/ ((uint32_t)((2*freq)*( (uint32_t)128)) )-1;
@@ -637,6 +625,11 @@ void InitTimer1(uint32_t freq) // freq in Hz
     T1CONbits.ON = 1;
 
     printf("Timer-1 set to %d Hz\n", freq);
+}
+
+uint32_t GetTimer1_Freqency()
+{
+    return CurrentFrequency_T1;
 }
 
 void InitTimer4(uint32_t freq) // freq in Hz

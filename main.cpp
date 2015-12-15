@@ -97,13 +97,19 @@ using namespace std;
  */
 int main(int argc, char* argv[]) 
 {
-    uint32_t    timer_freq = 10;//Hz 
-
+   // if a system reset is required comment out the following line and run the program
 //    SYSTEM_SOFT_RESET();
+    
+
+    uint32_t    timer_freq = 5;//Hz 
+    
     InitSystem();
     InitTimer1(timer_freq);
+    TemperatureSystemInit();
     
-// ***************** All the test functions, 
+// ***************** The following commented out function calls perform 
+//    various tests. Used mainly for debug purposed
+//    
 //    TestSPi2Slave();
 //    TestHyperADC_SPI2Slave_Read();
 //    TestSPI1Master_To_SPI2SlaveData_Transfer(8L*1000000L);
@@ -116,36 +122,16 @@ int main(int argc, char* argv[])
 //    TestSPI1_Master();
 
     
-    TemperatureSystemInit();
 //    SPI1_TempMeasurement_LM_Thermo_Test();
 //    SPI1_TempMeasurement_Test();
 //    TestUART2DataSendToRaspberryPi();
 //    TestSPi2Slave_WithSendData_WithSPI2Command();
 
 //    TestSPi2Slave_WithSendData();
-
-    
-//***************************************
-    
-    
-//***************************************
 //    InitPWM(1500,20);
 //    SetPWMDutyCycle(1, 30);
     
     AdjustTemperature(27.0);
-//    DPDT_INIT();
-    
-//    while(1)
-//    {
-//        DPDT_2(0);
-//        WaitMS(1);
-//        DPDT_2(1);
-//        WaitMS(1);
-//    }
-
-  
-    while(1);
-//    ReadWriteUART2();
 
     return 0;
 }
