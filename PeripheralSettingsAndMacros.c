@@ -34,17 +34,13 @@ uint32_t    CurrentFrequency_T1 = 0;
 
 void _mon_putc(char c)
 {
-    
 // if printf output is set to __XC_UART = 2, UART2
-
    U2TXREG = c;
    while (U2STAbits.UTXBF);
 
 // if printf output is set to __XC_UART = 1, UART1
-   
 //   U1TXREG = c;
 //   while (U1STAbits.UTXBF);
-
 }
 
 
@@ -63,7 +59,7 @@ void InitSystem()
     __XC_UART = 2;
  
   
-    InitSPI1(100000L);
+    InitSPI1(200000L);
     InitSPI2Slave();    
     
     printf("System speed %ld Hz\n", (long) SYS_FREQ);
@@ -71,56 +67,6 @@ void InitSystem()
     
 //    SetupDebugGPIOPins();
 }
-
-
-//void InitSystem_Test()
-//{
-//    SYSTEMConfigPerformance(SYS_FREQ);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
-//    mOSCSetPBDIV(OSC_PB_DIV_1);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
-//                                                              // you may run at PBclk of 72Mhz if you like too (omit this step)
-//                                                              // This will double the PWM frequency.
-//    
-//    INTEnableSystemMultiVectoredInt();
-//
-////    BMXDRMSZ = 0x20000;
-////    BMXPFMSZ = 0x20000;
-//
-//    
-//    /*    
-////    BMXCONbits.BMXARB = 2;
-//    
-////    BMXDKPBA = 10 * 1024;
-//            
-////    BMXDUDBA = 0x10000;
-////    BMXDUPBA = 0x10000;
-//    
-//    
-////    BMXCONbits.BMXWSDRM;
-//    
-////    mBMXSetRAMKernProgOffset(0x80000000);
-////    mBMXSetFlashUserPartition(0x10000);
-//*/
-//            
-//       
-//    mBMXDisableDRMWaitState();
-//    CheKseg0CacheOn();
-//
-//    InitUART1();
-//    InitUART2();    // print with UART2
-//    __XC_UART = 2;
-// 
-//  
-//    InitSPI1(128);
-//    InitSPI2Slave();    
-//    
-//    
-//    
-//
-//    printf("System speed %ld Hz\n", (long) SYS_FREQ);
-//    printf("Peripheral clock speed %ld Hz\n", (long) GetPeripheralClock());
-//
-//}
-//
 
 void SystemReset()
 {
@@ -201,11 +147,8 @@ void SetupDebugGPIOPins()
 
 void RtccSetup()
 {
-    
     RtccInit();
     RtccSetup();
-    
-    
 }
 
 
@@ -228,14 +171,7 @@ void WaitMS(unsigned int ms)
 int InitUART1()
 {
     int uart_id = 0;
-
-//    #if defined (__32MX220F032D__) || defined (__32MX250F128D__)
-// //   PPSInput(2,U2RX,RPB5); // Assign RPB5 as input pin for U2RX
-// //   PPSOutput(4,RPB0,U2TX); // Set RPB0 pin as output for U2TX
-//    #elif defined (__32MX430F064L__) || (__32MX450F256L__) || (__32MX470F512L__)
-////    PPSInput(2,U1RX,RPF4); // Assign RPF4 as input pin for U1RX
-////    PPSOutput(2,RPF5,U1TX); // Set RPF5 pin as output for U1TX
-    
+   
     PPS_Unlock();
 
     U1RXRbits.U1RXR = 2; // 0b0010; // RF4 input J11.46
@@ -243,14 +179,11 @@ int InitUART1()
     
     PPS_Lock();
     
-//    #endif
     uint32_t brate;
     
     brate = 115200L;
 //    brate = 500000L;
-    
 //    brate = 460800;//921600L/2L;
-
 //    brate = 38400L;
     
     UARTConfigure((UART_MODULE)uart_id, UART_ENABLE_PINS_TX_RX_ONLY);
@@ -266,44 +199,18 @@ int InitUART2()
 {
     int uart_id = 1;
 
-//    mPORTCSetPinsDigitalIn(BIT_1 | BIT_3);
-//    mPORTCSetPinsDigitalOut(BIT_2 | BIT_4);
-
-//    mPORTCSetPinsDigitalIn(BIT_1 );
-//    mPORTCSetPinsDigitalOut(BIT_4);
-    
-//    mPORTDSetPinsDigitalOut(BIT_11);    // U2TX  J10.15
-//    mPORTDSetPinsDigitalIn(BIT_10 );    // U2RX J10.16
-
     mPORTASetPinsDigitalIn(BIT_14);    // U2RX J10.35
     mPORTASetPinsDigitalOut(BIT_15);    // U2TX  J10.36
     
     PPS_Unlock();
 
-//    U2RXRbits.U2RXR = 0b1010; // 0b0010; // RC1 input J10.18
-//    RPC4Rbits.RPC4R = 0b0001; // U2TX  UTX  J10.21
-
-//    U2RXRbits.U2RXR = 0b0011; // 0b0010; // RD10 input J10.16
-//    RPD11Rbits.RPD11R = 0b0001; // U2TX  UTX  J10.15
-
     U2RXRbits.U2RXR = 0b1101; // 0b0010; // RA14 input J10.35
     RPA15Rbits.RPA15R = 0b0001; // U2TX  UTX  J10.36
    
-//    U2CTSRbits.U2CTSR = 0b1100; // RC3 .. Input  J10.20
-//    RPC2Rbits.RPC2R = 0b0001; // U2RTS 0b0011; RTS output J10.19
-    
     PPS_Lock();
 
-    
     unsigned int brate;
     brate = 115200L;//115200L * 1L;
-//    brate = 500000L;//115200L * 1L;
-
-    //    brate = 256000L;//115200L * 1L;
-//    brate = 921600L;
-    
-//    U2MODEbits.BRGH = 4;
-//    U2MODEbits.
  
     UARTConfigure((UART_MODULE)uart_id, UART_ENABLE_HIGH_SPEED | UART_ENABLE_PINS_TX_RX_ONLY);
     UARTSetFifoMode((UART_MODULE)uart_id,(UART_FIFO_MODE) (UART_INTERRUPT_ON_TX_NOT_FULL | UART_INTERRUPT_ON_RX_NOT_EMPTY));
@@ -313,15 +220,8 @@ int InitUART2()
     SetPriorityIntU2(UART_INT_PR3);
     mU2ClearAllIntFlags();
     mU2RXIntEnable(0);
-//    
-//    EnableIntU2RX;
-//    mU2
-//    mU2RXIntEnable(1);
     
     UARTEnable((UART_MODULE)uart_id, (UART_ENABLE_MODE) UART_ENABLE_FLAGS(UART_PERIPHERAL | UART_RX | UART_TX));
-//    UARTEnable((UART_MODULE)uart_id, (UART_ENABLE_MODE) UART_ENABLE_FLAGS(UART_RX | UART_TX));
-
-//    UART_PERIPHERAL
     return uart_id;
 }
 
@@ -343,10 +243,6 @@ void MapSPI1MasterPins()
 
     mPORTDSetPinsDigitalOut(BIT_0);// SDO1 out 
 
-//    mPORTDSetPinsDigitalOut(BIT_9);// SS1 out
-//    mPORTDSetBits(BIT_9); // set high by default}
-//    CNPDDbits.CNPDD9 = 1; // pull down
-
     mPORTBSetPinsDigitalOut(BIT_2);// SS1 out
     mPORTBClearBits(BIT_2); // set high by default}
     CNPUBbits.CNPUB2 = 1; // pull up
@@ -361,20 +257,15 @@ void MapSPI1SlavePins()
     
     // output pin SDO1
     RPD0Rbits.RPD0R = 0b1000; // // SDO1 // RD0 // J10.43
- 
-    // input pins SDI1 and SS1
 
+    // input pins SDI1 and SS1
     SDI1Rbits.SDI1R = 0b1010;  // 0b1010 // RPC4  // SDI1
 //    SDI1Rbits.SDI1R = 0b0010;  // 0b0010 // RPF5  // SDI1 // J10.52
     SS1Rbits.SS1R = 0b1111; // RB2 // SS1 // J10.46
 
-//    RPB2Rbits.RPB2R = 0b0111; //0b0111; // SS1
-//    RPD9Rbits.RPD9R = 7; //0b0111; // SS1
-//    SS1Rbits.SS1R = 0; // RPD9 input
 
     LockPPS();
 
-//    TRISD
     mPORTDSetPinsDigitalIn(BIT_10);// SCK1 out J10.41
     
     // SPI1 at J10.44
@@ -713,9 +604,14 @@ void InitSPI2Slave()
 }
 
 
-void InitSPI1(int freq_hz)
+void InitSPI1(uint32_t freq_hz)
 {
-    int baud_rate = SPI_BRG_VAL(freq_hz);
+    int baud_rate = 4;//SPI_BRG_VAL(freq_hz);
+    
+    baud_rate = SpiBrgVal(SYS_FREQ, freq_hz);
+    
+    
+    printf("baud_rate == %d\n", baud_rate);
     
     MapSPI1MasterPins();
     
@@ -734,7 +630,7 @@ void InitSPI1(int freq_hz)
 }
 
 
-void InitSPI2(int freq_hz)
+void InitSPI2(uint32_t freq_hz)
 {
     int baud_rate = SPI_BRG_VAL(freq_hz);
 

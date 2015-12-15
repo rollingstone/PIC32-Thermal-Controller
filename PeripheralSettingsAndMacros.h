@@ -134,8 +134,8 @@ void InitSPI1Slave();
 void InitSPI2Slave();
 
 
-void InitSPI1(int freq_hz);
-void InitSPI2(int freq_hz);
+void InitSPI1(uint32_t freq_hz);
+void InitSPI2(uint32_t freq_hz);
 
 
 int  InitUART1();

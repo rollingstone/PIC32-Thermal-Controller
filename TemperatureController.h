@@ -73,15 +73,15 @@ extern "C" {
 
 // Command list
     
-#define SET_NEW_VALUE           1
-#define SEND_BACK_VALUE         0    
+#define SET_VALUE               1
+#define SEND_VALUE              0    
     
 #define PID_FREQ                            120
-#define HAS_TARGET_TEMP_REACHED             111
 #define SEND_ALL_THERMO_DATA_VIA_UART1      0xFF
 #define SEND_ALL_THERMO_DATA_VIA_SPI2       99
+#define SKIP_INTERVAL                       121    
     
-    
+#define HAS_TARGET_TEMP_REACHED             111
     
     
 void AdjustTemperature(float target_temp);
